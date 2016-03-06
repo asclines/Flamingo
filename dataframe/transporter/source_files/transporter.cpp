@@ -18,8 +18,18 @@ public:
 			DataframeT 	data,
 			IteratorT 	iterator,
 			);
-	
-	//Sends rows to the dataframe at the destination
+
+	//Sends pre-packed rows (Inventory) to the dataframe at the destination
+	template<typename CommunicatorT, typename AddressT>
+	static void SendInventory(
+			AddressT 	source,
+			AddressT 	destination,
+			Inventory 	inventory,
+			CommunicatorT 	communicator
+			);
+			
+
+	//Takes dataframe rows, packs them and sends them to the dataframe at the destination 
 	template<typename CommunicatorT, typename IteratorT, typename AddressT>
 	static void SendRows(
 			DataFrameT 	source,
