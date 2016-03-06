@@ -28,12 +28,6 @@ public:
 			IteratorT 	iterator	
 			);
 
-	//Moves a dataframe to new destination
-	template<typename AddressT>
-	static void MoveDataframe(
-			DataframeT data,
-			AddressT destination
-			);
 
 private:
 
@@ -47,13 +41,6 @@ private:
 			CommunicatorT 	communicator 
 			);
 
-	//Used by dataframes to alert that they moved in
-	template<typename AddressT>
-	static void RegisterDataframe(AddressT *address);
-
-	//Used by dataframes to alert that they moved out
-	template<typename AddressT>
-	static void DeregisterDataframe(AddressT *address);
 
 };
 
