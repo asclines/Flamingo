@@ -1,5 +1,7 @@
 //iterator.inl
 #include "iterator.cpp"
+#include "iterator_functors.cpp"
+
 //private functions
 template<class ... Type>
 dataframe_iterator<Type...>::pointer dataframe_iterator<Type...>::get_pointer() const{
@@ -130,6 +132,16 @@ dataframe_iterator<Type...>::dataframe_iterator(const dataframe_iterator<Type...
 }
 
 template<class ... Type>
+dataframe_iterator<Type...>::dataframe_iterator(
+	const dataframe_iterator<Type...>::ColumnArray& array)
+{
+	typename iterator_functors::assign<traits<Type...>::_numCol,Type...> assigner; 
+	assigner(array,_pointer); 
+//std::array<columnbase*,_colnum
+}
+
+
+template<class ... Type>
 dataframe_iterator<Type...>::~dataframe_iterator(){}
 
 template<class ... Type>
@@ -152,7 +164,7 @@ bool dataframe_iterator<Type...>::operator!=(const dataframe_iterator<Type...>& 
 
 template<class ... Type>
 bool dataframe_iterator<Type...>::operator<(const dataframe_iterator<Type...>& other) const{
-	bool result=thrust::get<0>(_pointer)<thrust::get<0>(other.get_pointer());
+	bool result=_pointer<other.get_pointer();
 	return result;
 } 
 
@@ -233,7 +245,7 @@ dataframe_iterator<Type...> dataframe_iterator<Type...>::operator-(dataframe_ite
 
 template<class ... Type>
 dataframe_iterator<Type...>::difference_type dataframe_iterator<Type...>:: operator-(const dataframe_iterator<Type...>& other) const{
-	difference_type result=thrust::get<0>(_pointer)-thrust::get<0>(other.get_pointer());
+	difference_type result=std::get<0>(_pointer)-std::get<0>(other.get_pointer());
 	return result;
 } 
 
@@ -261,7 +273,7 @@ dataframe_iterator<Type...>::reference dataframe_iterator<Type...>::operator[](d
 template<class ... Type>
 template<int n>
 typename traits<Type...>::Return<n>::pointer_base dataframe_iterator<Type...>::get(){
-	return thrust::get<n>(_pointer); 
+	return  _pointer.template get<n>(); 
 }
 
 

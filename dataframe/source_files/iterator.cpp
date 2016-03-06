@@ -2,12 +2,9 @@
 #ifndef DATAFRAME_ITERATOR
 #define DATAFRAME_ITERATOR
 
-#include <thrust/tuple.h>
-#include <thrust/iterator/zip_iterator.h>
-#include "traits.cpp"
 #include <iterator>
 #include <boost/mpl/for_each.hpp>
-
+#include <array>
 
 template<class ... Type>
 class dataframe_iterator: public traits<Type...> {
@@ -17,6 +14,8 @@ class dataframe_iterator: public traits<Type...> {
 	typedef typename traits<Type...>::reference			reference;
 	typedef typename traits<Type...>::pointer			pointer;
 	typedef typename traits<Type...>::range				range; 
+	typedef std::array<columnbase*,sizeof...(Type)>		ColumnArray;
+
  
 	typedef std::random_access_iterator_tag			iterator_category;
 	
@@ -26,6 +25,7 @@ class dataframe_iterator: public traits<Type...> {
 	public:
 	dataframe_iterator();
 	dataframe_iterator(const dataframe_iterator<Type...>&);
+	dataframe_iterator(const ColumnArray&); 
 	dataframe_iterator(pointer p):_pointer(p){}; 
 	~dataframe_iterator();
 

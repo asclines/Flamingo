@@ -17,7 +17,7 @@ class dataframeTest : public ::testing::Test{
 	typedef typename Container::iterator		iterator;
 	typedef typename Container::value_type		element; 
 	
-
+	Container global_container; 	
 	
 	DEFINE(ConstructorTest,	DATAFRAME_THREADS)
 	DEFINE(AssignmentTest,	DATAFRAME_THREADS)	
@@ -62,7 +62,14 @@ void dataframeTest<Type...>::ModifyTest()
 template<class ... Type>
 void dataframeTest<Type...>::ConstructorTest()
 {
-//	Container local; 
+	typedef typename Container::value_type value_type;
+
+	Container local;
+	Container local_empty_copy(local);
+
+	value_type value(0,0,0,0);
+	Container local2(10,value); 
+		
 };
 template<class ... Type>
 void dataframeTest<Type...>::AssignmentTest()
@@ -110,14 +117,15 @@ void dataframeTest<Type...>::LockTest()
 template<class ... Type>
 void dataframeTest<Type...>::QuerryTest()
 {
-/*
-	typedef typename Container::size_type size;	
 
-	size a=vector.size();
-	size b=vector.max_size();
-	size c=vector.capacity();
-	bool d=vector.empty();
-*/
+	typedef typename Container::size_type size;	
+	Container local;
+
+	size a=local.size();
+	size b=global_container.max_size();
+//	size c=global_container.capacity();
+	bool d=global_container.empty();
+
 }
 
 
