@@ -18,8 +18,18 @@ public:
 			DataframeT 	data,
 			IteratorT 	iterator,
 			);
-	
-	//Sends rows to the dataframe at the destination
+
+	//Sends pre-packed rows (Inventory) to the dataframe at the destination
+	template<typename CommunicatorT, typename AddressT>
+	static void SendInventory(
+			AddressT 	source,
+			AddressT 	destination,
+			Inventory 	inventory,
+			CommunicatorT 	communicator
+			);
+			
+
+	//Takes dataframe rows, packs them and sends them to the dataframe at the destination 
 	template<typename CommunicatorT, typename IteratorT, typename AddressT>
 	static void SendRows(
 			DataFrameT 	source,
@@ -28,12 +38,6 @@ public:
 			IteratorT 	iterator	
 			);
 
-	//Moves a dataframe to new destination
-	template<typename AddressT>
-	static void MoveDataframe(
-			DataframeT data,
-			AddressT destination
-			);
 
 private:
 
@@ -47,13 +51,6 @@ private:
 			CommunicatorT 	communicator 
 			);
 
-	//Used by dataframes to alert that they moved in
-	template<typename AddressT>
-	static void RegisterDataframe(AddressT *address);
-
-	//Used by dataframes to alert that they moved out
-	template<typename AddressT>
-	static void DeregisterDataframe(AddressT *address);
 
 };
 
