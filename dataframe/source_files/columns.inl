@@ -24,22 +24,32 @@ column<T>::column(const column<T>& other){
 	{
 		case host:
 		{
-			*static_cast<host_column*>(_ptr)=*static_cast<host_column*>(other._ptr); 
+			host_column* host_it=new host_column();
+			(*host_it)=*static_cast<host_column*>(other._ptr);	
+			_ptr=static_cast<void*>(host_it); 
 			break; 
 		}
 		case device:
 		{
-			*static_cast<device_column*>(_ptr)=*static_cast<device_column*>(other._ptr); 
+			device_column* device_it=new device_column();
+			(*device_it)=*static_cast<device_column*>(other._ptr);	
+			_ptr=static_cast<void*>(device_it); 
 			break; 
 		}
 		case pinned:
 		{
-			*static_cast<pinned_column*>(_ptr)=*static_cast<pinned_column*>(other._ptr); 
+			pinned_column* pinned_it=new pinned_column();
+			(*pinned_it)=*static_cast<pinned_column*>(other._ptr);	
+			_ptr=static_cast<void*>(pinned_it); 
+
 			break; 
 		}
 		case unified:
 		{
-			*static_cast<unified_column*>(_ptr)=*static_cast<unified_column*>(other._ptr); 
+			unified_column* unified_it=new unified_column();
+			(*unified_it)=*static_cast<unified_column*>(other._ptr);	
+			_ptr=static_cast<void*>(unified_it); 
+
 			break; 
 		}
 	}
@@ -51,7 +61,10 @@ column<T>::~column(){
 	{
 		case host:
 		{
-			delete static_cast<host_column*>(_ptr); 
+			if(_ptr){
+				host_column* host_it=static_cast<host_column*>(_ptr);
+				delete host_it;  
+			}
 			break; 
 		}
 		case device:
@@ -578,25 +591,29 @@ iter column<T>::insert(iter it, column<T>::value_type v){
 		case host:
 		{
 			host_column* host_ptr= static_cast<host_column*>(_ptr); 
-			host_ptr->insert(it,v);
+			typename host_column::iterator it_thrust(it); 
+			host_ptr->insert(it_thrust,v);
 			break; 
 		}
 		case device:
 		{
 			device_column* device_ptr=static_cast<device_column*>(_ptr); 
-			device_ptr->insert(it,v);
+			typename device_column::iterator it_thrust(it); 
+			device_ptr->insert(it_thrust,v);
 			break; 
 		}
 		case pinned:
 		{
 			pinned_column* pinned_ptr=static_cast<pinned_column*>(_ptr); 
-			pinned_ptr->insert(it,v);
+			typename pinned_column::iterator it_thrust(it); 
+			pinned_ptr->insert(it_thrust,v);
 			break; 
 		}
 		case unified:
 		{
 			unified_column* unified_ptr=static_cast<unified_column*>(_ptr); 
-			unified_ptr->insert(it,v);
+			typename unified_column::iterator it_thrust(it); 
+			unified_ptr->insert(it_thrust,v);
 			break; 
 		}
 	}
