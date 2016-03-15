@@ -19,8 +19,8 @@ public:
 	static void PackRows(
 			Inventory 	inventory,
 			DataframeT 	*source_data,
+			AddressKey	*destination_key
 			IteratorT 	iterator,
-			AddressKey	*address_key
 			);
 
 	//Sends pre-packed rows (Inventory) to the dataframe at the destination
@@ -34,7 +34,7 @@ public:
 	//Takes dataframe rows, packs them and sends them to the dataframe at the destination 
 	template<typename IteratorT>
 	static void SendRows(
-			DataFrameT 	*source,
+			DataFrameT 	*source_data,
 			AddressKey	*destination_key,
 			IteratorT 	iterator	
 			);
