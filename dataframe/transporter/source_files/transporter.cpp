@@ -18,17 +18,17 @@ public:
 	template<typename IteratorT>
 	static void PackRows(
 			Inventory 	inventory,
-			DataframeT 	*data,
+			DataframeT 	*source_data,
 			IteratorT 	iterator,
 			AddressKey	*address_key
 			);
 
 	//Sends pre-packed rows (Inventory) to the dataframe at the destination
 	static void SendInventory(
-			AddressKey 	*source_key,
+			DataframeT 	*source_data,
 			AddressKey 	*destination_key,
 			Inventory 	inventory
-			);1
+			);
 			
 
 	//Takes dataframe rows, packs them and sends them to the dataframe at the destination 
@@ -46,7 +46,7 @@ private:
 
 	//Recieves rows for dataframe in serialized form
 	static void RecieveRows(
-			AddressK	*source_key,
+			AddressKey	*source_key,
 			Inventory 	inventory
 			);
 
