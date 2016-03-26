@@ -9,48 +9,61 @@
 #include <boost/mpl/pair.hpp>
 #include <type_traits>
 #include <boost/mpl/int.hpp>
+#include "columnbase.cpp"
+#include <tuple>
 
 template<Memory M>
 struct memory2type{
-	typedef boost::mpl::int_<1> type; 
+	typedef boost::mpl::int_<0> type; 
 };
 template<>
 struct memory2type<device>{
-	typedef boost::mpl::int_<2> type; 
+	typedef boost::mpl::int_<1> type; 
 };
 template<>
 struct memory2type<pinned>{
-	typedef boost::mpl::int_<3> type; 
+	typedef boost::mpl::int_<2> type; 
 };
 template<>
 struct memory2type<unified>{
-	typedef boost::mpl::int_<4> type; 
+	typedef boost::mpl::int_<3> type; 
 };
 
 template<typename T>
-struct column : public columnbase {
-	typedef thrust::device_vector<T,typename allocation_policy<T,device>::allocator>	device_column;
-	typedef thrust::device_vector<T,typename allocation_policy<T,pinned>::allocator>	pinned_column;
-	typedef thrust::device_vector<T,typename allocation_policy<T,unified>::allocator>	unified_column;
-	typedef thrust::host_vector<T>		host_column;
-	typedef T				value_type;
-	typedef value_type*		pointer; 
+struct column  {
+	typedef typename allocation_policy<T,device>::allocator device_allocator; 
+	typedef typename allocation_policy<T,pinned>::allocator pinned_allocator; 
+	typedef typename allocation_policy<T,unified>::allocator unified_allocator; 
+
+	typedef thrust::device_vector<T,device_allocator>		device_column;
+	typedef thrust::device_vector<T,pinned_allocator>		pinned_column;
+	typedef thrust::device_vector<T,unified_allocator>	unified_column;
+	typedef thrust::host_vector<T>					host_column;
 	
 	typedef boost::mpl::map<	
-					boost::mpl::pair<typename memory2type<device>::type,device_column>,
-					boost::mpl::pair<typename memory2type<host>::type,host_column>,
-					boost::mpl::pair<typename memory2type<pinned>::type,pinned_column>,
-					boost::mpl::pair<typename memory2type<unified>::type,unified_column>
-				> map; 
+		boost::mpl::pair<typename memory2type<device>::type,device_column>,
+		boost::mpl::pair<typename memory2type<host>::type,host_column>,
+		boost::mpl::pair<typename memory2type<pinned>::type,pinned_column>,
+		boost::mpl::pair<typename memory2type<unified>::type,unified_column>
+	> map; 
+	typedef std::tuple<	
+					host_column,
+					device_column,
+					pinned_column,
+					unified_column
+				> MemoryTuple; 
+
+	typedef T					value_type;
+	typedef value_type*			pointer; 
+	typedef const value_type*	const_pointer; 	
+
 	template<Memory M>
 	struct Return{
-		typedef typename boost::mpl::at<map,typename memory2type<M>::type>::type raw;
-		typedef raw* type; 
+		typedef typename boost::mpl::at<map,typename memory2type<M>::type>::type column;
 	};
-	
 
-	Memory _location;
-	void* _ptr; 
+	Memory		_location;
+	MemoryTuple	_tuple; 
 
 	column();
 	column(int);
@@ -70,12 +83,15 @@ struct column : public columnbase {
 	Memory getlocation()const; 
 
 	template<Memory M>
-	typename Return<M>::type access(); 	
-	
-	void* access_raw(); 
+	typename Return<M>::column& access(); 	
+
+	pointer data(); 
+	const_pointer data()const; 
 
 	void swap(column<T>& );
 	column<T>& operator=(const column<T>& );
+	bool operator==(const column<T>&)const;
+	bool operator!=(const column<T>&)const; 
 	//--------vector functions
 	typedef typename host_column::size_type size_type; 
 	
@@ -113,17 +129,29 @@ struct column : public columnbase {
 
 template<int n,class ... Type>
 struct column_return{
-	typedef typename traits<Type...>::Return<n>::type base; 
-
-	typedef typename column<base>::type type;  
+	typedef typename traits<Type...>::Return<n>::type		base; 
+	typedef typename column<base>::type				type;  
 };
 
+template<typename T>
+struct type2column {
+	typedef column<T> type; 
+};
 
+template<class ... Type>
+struct column_tuple {
+	typedef traits<Type...> Traits; 
 
+	typedef typename Traits::type_vector vec; 
+	typedef typename transform<vec,type2column<_1> >::type col_vec;
+	typedef typename vec2tuple<Traits::_numCol-1,col_vec>::type type; 
 
-
-
-
+	template<int n>
+	struct element {
+		typedef boost::mpl::int_<n> position;
+		typedef typename boost::mpl::at<col_vec,position>::type type; 
+	};
+};
 
 #include "columns.inl"
 #endif 
