@@ -1,60 +1,47 @@
-//transporter.cpp
-#ifndef TRANSPORTER
-#define TRANSPORTER
+#include "transporter.hpp"
 
-template<typename DataframeT>
-class transporter{
-public:
+#include <mpi.h>
+#include <stdio.h>
+#include <string>
 
-/* typedefs */
+
+/****************************************************************************
+ *	Public Method Definitions
+ ****************************************************************************/
+
+Transporter::Transporter(){
+	MPI_Init(NULL,NULL);
+
+	MPI_Comm_size(MPI_COMM_WORLD, &process_info_.world_size);  
+	MPI_Comm_rank(MPI_COMM_WORLD, &process_info_.world_rank);
+	char name[MPI_MAX_PROCESSOR_NAME];  
+	int name_length;  
+	MPI_Get_processor_name(name,&name_length); 
+	process_info_.name = name;  
+}
+
+Transporter::~Transporter(){
+	MPI_Finalize();
+}
+
+
+ProcessInfo Transporter::GetProcessInfo(){
+	return process_info_;
+}
+
+std::string Transporter::GetSummary(){
+	std::string summary = "Process Info: ";
+
+	summary.append("\n\tProcess Name: ");
+	summary.append(process_info_.name);
+
+	summary.append("\n\tWorld Rank: ");
+	summary.append(std::to_string(process_info_.world_rank));
 	
-	//Serialized data to be sent over MPI
-	typedef char* Inventory;
+	summary.append("\n\tWorld Size: ");
+	summary.append(std::to_string(process_info_.world_size));
 
-/* methods */
-	template<typename IteratorT>
-	static void PackRows(
-			Inventory 	inventory,
-			DataframeT 	data,
-			IteratorT 	iterator,
-			);
-	
-	//Sends rows to the dataframe at the destination
-	template<typename CommunicatorT, typename IteratorT, typename AddressT>
-	static void SendRows(
-			DataFrameT 	source,
-			AddressT	destination,
-			CommunicatorT 	communicator,
-			IteratorT 	iterator	
-			);
+	return summary;
+}
 
-	//Moves a dataframe to new destination
-	template<typename AddressT>
-	static void MoveDataframe(
-			DataframeT data,
-			AddressT destination
-			);
 
-private:
-
-/* methods */
-
-	//Recieves rows for dataframe in serialized form
-	template<typename CommunicatorT, typename AddressT>
-	static void RecieveRows(
-			AddressT 	source,
-			Inventory 	inventory,
-			CommunicatorT 	communicator 
-			);
-
-	//Used by dataframes to alert that they moved in
-	template<typename AddressT>
-	static void RegisterDataframe(AddressT *address);
-
-	//Used by dataframes to alert that they moved out
-	template<typename AddressT>
-	static void DeregisterDataframe(AddressT *address);
-
-};
-
-#endif
