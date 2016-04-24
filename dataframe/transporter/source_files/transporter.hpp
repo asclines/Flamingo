@@ -24,6 +24,12 @@ class Transporter{
 		std::string GetSummary(); //For debugging use
 
 //Methods - MPI Operations
+		void Broadcast(
+				char* send_data, //Null if not source
+				char*& recv_data, //Empty pointer
+				int data_size, // Number of elements in send_data
+				int source //Node ID of process sending data
+			      );
 
 	private:
 

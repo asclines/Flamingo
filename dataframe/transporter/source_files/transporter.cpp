@@ -44,4 +44,29 @@ std::string Transporter::GetSummary(){
 	return summary;
 }
 
+void Transporter::Broadcast(
+		char* send_data,
+		char*& buffer,
+		int data_size,
+		int source){
+
+	if(process_info_.world_rank == source){
+		buffer = send_data;
+
+	} else{
+		buffer = (char *)malloc(sizeof(char) * data_size);
+	}
+
+	MPI_Bcast(
+			buffer,
+			data_size,
+			MPI_CHAR,
+			source,
+			MPI_COMM_WORLD
+		);
+}
+
+/****************************************************************************
+ *	Private Method Definitions
+ ****************************************************************************/
 
