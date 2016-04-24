@@ -16,6 +16,8 @@
 #define TEST_CONTAINER_SIZE 16
 #define TEST_SIZE 4
 
+using namespace Flamingo::Memory; 
+
 //***************************buddy allocator*****************
 template <typename Policy>
 class BuddyAllocTest : public ::testing::Test {
@@ -38,17 +40,33 @@ template <typename T>
 void BuddyAllocTest<T>::AllocDeallocTest() {
      auto q = (this->allocator).allocate(sizeof(int));
      (this->allocator).deallocate(q);
+
+     q = (this->allocator).allocate(1);
+	(this->allocator).deallocate(q);
 }
 
 template <typename T>
 void BuddyAllocTest<T>::MultiAllocDeallocTest() {
      auto q1 = (this->allocator).allocate(sizeof(int));
      auto q2 = (this->allocator).allocate(sizeof(int));
-     auto q3 = (this->allocator).allocate(sizeof(int));
 
      (this->allocator).deallocate(q1);
      (this->allocator).deallocate(q2);
-     (this->allocator).deallocate(q3);
+
+	for(int i=1; i<20; i++){
+		q1 = (this->allocator).allocate(i*sizeof(int));
+		q2 = (this->allocator).allocate(i*sizeof(int));
+
+		int* p1=q1;
+		int* p2=q2;	
+
+		T::Location_Policy::MemCopy(p1,p2,i*sizeof(int) );
+		
+		(this->allocator).deallocate(q1);
+		(this->allocator).deallocate(q2);
+	}
+
+
 }
 
 template <typename T>
@@ -66,7 +84,7 @@ void BuddyAllocTest<T>::VectorAllocDeallocTest() {
 
 template <typename T>
 void BuddyAllocTest<T>::RebindTest() {
-     typedef typename T::rebind<float, location<host> >::other other;
+     typedef typename T::rebind<float, location<Region::host> >::other other;
      other alloc_other;
      typedef typename other::pointer other_pointer;
      other_pointer p;
@@ -74,7 +92,7 @@ void BuddyAllocTest<T>::RebindTest() {
      alloc_other.deallocate(p);
 
      typedef typename T::pointer pointer;
-     typedef typename T::rebind<pointer, location<host> >::other ptr_Allocator;
+     typedef typename T::rebind<pointer, location<Region::host> >::other ptr_Allocator;
      ptr_Allocator ptr_alloc;
      typename ptr_Allocator::pointer q = ptr_alloc.allocate(0);
      ptr_alloc.deallocate(q);
@@ -87,6 +105,11 @@ void BuddyAllocTest<T>::RebindTest() {
 
 #define BUDDY buddy_alloc_policy
 #define STANDARD standard_alloc_policy
+
+const Region host=Region::host;
+const Region unified=Region::unified;
+const Region pinned=Region::pinned;
+const Region device=Region::device;
 
 // clang-format off
 // python:key:function=MaxSizeTest AllocDeallocTest MultiAllocDeallocTest

@@ -6,26 +6,13 @@
 #include "traits.cpp"
 #include "columns.cpp"
 #include "iterator.cpp"
-#include "addressbook.cpp"
 #include <vector>
 #include <array>
 #include <iterator>
-
-class dataframeBase {
-	public:
-	typedef addressbook<dataframeBase>			AddressBook;
-	typedef typename AddressBook::Key			Key;
-	typedef typename AddressBook::Value		Value; 
-	static AddressBook						_addressbook;
-	Key _key; 	
-
-	dataframeBase();  	
-	~dataframeBase(); 
-	static Value find(Key);
-	Key id();
-	void id(int);  
-}; 
-dataframeBase::AddressBook dataframeBase::_addressbook; 
+#include "dataframe_base.cpp"
+#include "dataframe_traits.cpp"
+namespace Flamingo{
+namespace DataFrame{
 
 template<class ... Type>
 class dataframe : public dataframeBase{	
@@ -56,28 +43,23 @@ class dataframe : public dataframeBase{
 	typedef std::reverse_iterator<iterator>		reverse_iterator; 
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator; 
 
-	typedef typename Traits::type_vector		type_vector;
+	typedef typename Traits::type_vector			type_vector;
 	typedef typename column_tuple<Type...>::type		ColumnTuple;
-
-	private:
-	ColumnTuple		_column_tuple;
-
 	public:
 	dataframe();
-	dataframe(const dataframe<Type...>&);
+	dataframe(const dataframe<Type...>& other):
+				dataframeBase(other),
+				_column_tuple(other.tuple_const()){};
 	dataframe(size_type,value_type);
 	dataframe(size_type);
 	dataframe(iterator,iterator);
 
 	~dataframe(); 
 
-	private:
-	template<int n>
-	typename column_tuple<Type...>::element<n>::type& column_access();
-
-	ColumnTuple& tuple(); 
-	const ColumnTuple& tuple_const()const;
 	public:
+	void unsafe_move(Memory::Region);
+	Memory::Region location()const; 
+
 	void assign(iterator,iterator);
 	void assign(size_type,value_type);
 
@@ -106,6 +88,7 @@ class dataframe : public dataframeBase{
 	const_zip_iterator		cend_zip()const;
 
 	size_type size()const;
+	size_type device_size()const; 
 	size_type max_size()const;
 	bool empty()const;
 	void reserve(size_type);
@@ -128,8 +111,29 @@ class dataframe : public dataframeBase{
 	bool operator!=(const dataframe<Type...>&)const;
 	reference operator[](size_type);
 	dataframe<Type...>& operator=(const dataframe<Type...>&);
+
+	void broadcast(iterator);
+	void scatter(iterator,std::vector<int>&); 
+	
+	private:
+	ColumnTuple		_column_tuple;
+
+	private:
+	template<int n>
+	typename column_tuple<Type...>::element<n>::type& column_access();
+
+	ColumnTuple& tuple(); 
+	const ColumnTuple& tuple_const()const;
+
+	template<typename P>
+	void pop_to_array(P,iterator)const;
+	
+	template<typename P>
+	void push_back_from_array(P,size_type);
 };
 
 #include"dataframe.inl"
+}//end datafarme
+}//end flamingo
 #endif 
 

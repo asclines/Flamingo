@@ -1,25 +1,6 @@
 //dataframe.inl
 #include "dataframe.cpp"
 #include "dataframe_functors.cpp"
-
-//--------------------base------------
-dataframeBase::dataframeBase(){
-	_key=_addressbook.insert(this); 
-}
-dataframeBase::~dataframeBase(){
-	_addressbook.remove(id()); 
-}
-dataframeBase::Value dataframeBase::find(dataframeBase::Key key){
-	return _addressbook.find(key); 
-}
-dataframeBase::Key dataframeBase::id(){
-	return _key; 
-}
-void dataframeBase::id(int x){
-	_addressbook.change(id(),x); 
-	_key=x; 
-}
-
 //-----------------dataframe
 template<class ... Type>
 template<int n>
@@ -50,18 +31,10 @@ template<class ... Type>
 
 template<class ... Type>
 	dataframe<Type...>::dataframe(
-		const dataframe<Type...>& other)
-{	
-	tuple()=other.tuple_const(); 
-};
-
-
-template<class ... Type>
-	dataframe<Type...>::dataframe(
 		dataframe<Type...>::size_type s,
 		dataframe<Type...>::value_type v)
 {
-	dataframe_functors::fill<traits<Type...>::_numCol-1,Type...> filler;
+	Functors::fill<traits<Type...>::_numCol-1,Type...> filler;
 	filler(std::forward<ColumnTuple>(_column_tuple),s,v); 
 };
 
@@ -69,7 +42,7 @@ template<class ... Type>
 	dataframe<Type...>::dataframe(
 		dataframe<Type...>::size_type s)
 {
-	dataframe_functors::construct<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::construct<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),s); 
 };
 
@@ -78,8 +51,7 @@ template<class ... Type>
 		dataframe<Type...>::iterator start,
 		dataframe<Type...>::iterator stop)
 {
-
-	dataframe_functors::it_copy<traits<Type...>::_numCol-1,Type...> it_copier;
+	Functors::it_copy<traits<Type...>::_numCol-1,Type...> it_copier;
 	it_copier(
 		std::forward<ColumnTuple>(_column_tuple),
 		start,
@@ -88,7 +60,8 @@ template<class ... Type>
 };
 
 template<class ... Type>
-	dataframe<Type...>::~dataframe(){};
+	dataframe<Type...>::~dataframe(){
+};
 
 //-------------------container member functions-------------
 //-------------------consts
@@ -251,6 +224,15 @@ template<class ... Type>
 	size_type size=column.size();
 	return size;
 };
+template<class ... Type>
+	dataframe<Type...>::size_type 
+	dataframe<Type...>::device_size()const
+{
+	Functors::byte_size<	traits<Type...>::_numCol-1,
+								Type...> recursive;
+	size_type size=recursive(std::forward<const ColumnTuple>(_column_tuple)); 
+	return size;
+};
 
 template<class ... Type>
 	dataframe<Type...>::size_type 
@@ -277,7 +259,7 @@ template<class ... Type>
 	void 
 	dataframe<Type...>::reserve(dataframe<Type...>::size_type s)
 {
-	dataframe_functors::	
+	Functors::	
 				reserve<traits<Type...>::_numCol-1,Type...> recursive;
 	recursive(std::forward<ColumnTuple>(_column_tuple),s); 
 };
@@ -293,6 +275,51 @@ template<class ... Type>
 };
 
 //-------------------non consts
+//------------------movement and locking
+
+template<class ... Type>
+	void
+	dataframe<Type...>::unsafe_move(Memory::Region M)
+{	
+	switch(M)
+	{
+		case Memory::Region::host:
+		{
+			Functors::Move<	traits<Type...>::_numCol-1,
+									Memory::Region::host,
+									Type...> recursive;
+			recursive(std::forward<ColumnTuple>(_column_tuple)); 
+		}
+		case Memory::Region::device:	
+		{
+			Functors::Move<	traits<Type...>::_numCol-1,
+									Memory::Region::device,
+									Type...> recursive;
+			recursive(std::forward<ColumnTuple>(_column_tuple)); 
+		}
+		case Memory::Region::pinned:
+		{	
+			Functors::Move<	traits<Type...>::_numCol-1,
+									Memory::Region::pinned,
+									Type...> recursive;
+			recursive(std::forward<ColumnTuple>(_column_tuple)); 
+		}
+		case Memory::Region::unified:
+		{
+			Functors::Move<	traits<Type...>::_numCol-1,
+									Memory::Region::unified,
+									Type...> recursive;
+			recursive(std::forward<ColumnTuple>(_column_tuple)); 
+		}	
+	}
+};
+template<class ... Type>
+	Memory::Region
+	dataframe<Type...>::location()const
+{
+	return std::get<0>(_column_tuple).getlocation(); 
+};
+
 template<class ... Type>
 	void 
 	dataframe<Type...>::assign(
@@ -300,7 +327,7 @@ template<class ... Type>
 		dataframe<Type...>::iterator stop)
 {
 	clear(); 
-	dataframe_functors::	
+	Functors::	
 				assign_range<traits<Type...>::_numCol-1,Type...> recursive;
 	recursive(std::forward<ColumnTuple>(_column_tuple),start,stop); 
 };
@@ -311,14 +338,14 @@ template<class ... Type>
 		dataframe<Type...>::value_type v)
 {
 	clear(); 
-	dataframe_functors::assign_value<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::assign_value<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),s,v); 
 };
 template<class ... Type>
 	void 
 	dataframe<Type...>::clear()
 {
-	dataframe_functors::clear<traits<Type...>::_numCol-1,Type...> recursive;
+	Functors::clear<traits<Type...>::_numCol-1,Type...> recursive;
 	recursive(std::forward<ColumnTuple>(_column_tuple)); 
 };
 
@@ -332,7 +359,7 @@ template<class ... Type>
 	if(index >= size() ){
 		resize(index);
 	}
-	dataframe_functors::insert_value<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::insert_value<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),pos,v); 
 	return pos; 
 };
@@ -344,7 +371,7 @@ template<class ... Type>
 		dataframe<Type...>::iterator start,
 		dataframe<Type...>::iterator stop)
 {
-	dataframe_functors::insert_range<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::insert_range<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(	std::forward<ColumnTuple>(_column_tuple),
 			pos,
 			start,
@@ -357,7 +384,7 @@ template<class ... Type>
 	dataframe<Type...>::erase(
 		dataframe<Type...>::iterator pos)
 {
-	dataframe_functors::erase_value<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::erase_value<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),pos);
 	return pos;  
 };
@@ -368,7 +395,7 @@ template<class ... Type>
 		dataframe<Type...>::iterator start,
 		dataframe<Type...>::iterator stop)
 {
-	dataframe_functors::erase_range<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::erase_range<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),start,stop); 
 	return start; 
 };
@@ -391,7 +418,7 @@ template<class ... Type>
 	dataframe<Type...>::resize(
 		dataframe<Type...>::size_type n)
 {
-	dataframe_functors::resize<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::resize<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),n); 
 };
 
@@ -401,7 +428,7 @@ template<class ... Type>
 		dataframe<Type...>::size_type n,
 		dataframe<Type...>::value_type v)
 {
-	dataframe_functors::resize_value<traits<Type...>::_numCol-1,Type...> recurs;
+	Functors::resize_value<traits<Type...>::_numCol-1,Type...> recurs;
 	recurs(std::forward<ColumnTuple>(_column_tuple),n,v); 
 };
 
@@ -428,6 +455,7 @@ template<class ... Type>
 	dataframe<Type...>::operator=(
 		const dataframe<Type...>& other)
 {
+	dataframeBase::operator=(other); 
 	_column_tuple=other._column_tuple;
 	return *this; 
 };
@@ -447,8 +475,48 @@ template<class ... Type>
 {
 	return !(*this==other); 	
 };
+///--------------------comms-----------------------------------
+template<class ... Type>
+void dataframe<Type...>::broadcast(
+		dataframe<Type...>::iterator begin)
+{
+	const size_type byte_size=size()*traits<Type...>::row_size(); 
+	std::vector<char> buffer(byte_size); 
+	pop_to_array(buffer.begin(),begin); 	
+	//broadcast buffer
+};
 
+template<class ... Type>
+void dataframe<Type...>::scatter(
+		dataframe<Type...>::iterator begin,
+		std::vector<int>& stencil)
+{
+	const size_type byte_size=size()*traits<Type...>::row_size(); 
+	std::vector<char> buffer(byte_size); 
+	pop_to_array(buffer.begin(),begin); 	
+	//scatter buffer and stencil
+};
 
+template<class ... Type> 
+template<typename P>
+void dataframe<Type...>::pop_to_array(
+			P out,
+			dataframe<Type...>::iterator begin)const
+{
+	Functors::pop_to_array<traits<Type...>::_numCol-1,Type...> recurs;
+	recurs(out,begin,std::forward<ColumnTuple>(_column_tuple) ); 
+};
+
+template<class ... Type> 
+template<typename P>
+void dataframe<Type...>::push_back_from_array(
+			P out,
+			dataframe<Type...>::size_type count)
+{
+
+	Functors::push_from_array<traits<Type...>::_numCol-1,Type...> recurs;
+	recurs(out,begin,std::forward<ColumnTuple>(_column_tuple) ); 
+};
 
 
 

@@ -1,11 +1,11 @@
 #ifndef standard_alloc
 #define standard_alloc
 #include <memory>
-#include \
-    "location.cu"
+#include "location.cu"
 
-/** \ingroup allocator-module
- */
+namespace Flamingo{
+namespace Memory{
+
 template <typename T, typename Policy>
 class standard_alloc_policy : public Policy {
     public:
@@ -40,8 +40,8 @@ class standard_alloc_policy : public Policy {
      }
 
      //    memory allocation
-     inline pointer allocate(size_type cnt) {
-          return reinterpret_cast<pointer>(Policy::New(cnt * sizeof(T)));
+     inline pointer allocate(size_type size) {
+          return reinterpret_cast<pointer>(Policy::New(size));
      }
      inline void deallocate(pointer p) {
           Policy::Delete(p);
@@ -53,7 +53,8 @@ class standard_alloc_policy : public Policy {
      inline size_type max_size() const {
           return std::numeric_limits<size_type>::max();
      }
-};  //    end of class StandardAllocPolicy
+};  
+//    end of class StandardAllocPolicy
 
 // determines if memory from another
 // allocator can be deallocated from this one
@@ -67,5 +68,6 @@ class standard_alloc_policy : public Policy {
 //                                    OtherAllocator const&) {
 //    return false;
 //}
-
+}//end Memory
+}//end Flamingo
 #endif

@@ -1,7 +1,7 @@
 CC=nvcc
 UTIL=../../utilities
-FOLDERS=-I ../source_files -I ../../allocator/source_files -isystem /usr/include -L/usr/lib64 -I $(UTIL) 
-LINKS=-lgtest -lpthread -lboost_thread 
+FOLDERS=-I ../source_files -I ../../allocator/source_files -I ../../vector/source_files -isystem /usr/include -L/usr/lib64 -I $(UTIL) 
+LINKS=-lgtest -lpthread -lboost_thread -ltbb 
 SOURCE_DIR=../source_files
 COVERAGE=$(UTIL)/coverage.py
 CFLAGS=--std=c++11 -g -G -O0 -pg 
@@ -11,8 +11,8 @@ CFLAGS=--std=c++11 -g -G -O0 -pg
 #dataframe tests
 dataframe.test:container.cu $(COVERAGE) ../source_files/*
 	python $(COVERAGE) -i ./container.cu
-dataframe_test:container.cu dataframe.test
-	clear && $(CC) -o dataframe_test main_test.cu $(FOLDERS) $(LINKS) $(CFLAGS) -D DATAFRAME_TEST
+dataframe:container.cu dataframe.test
+	clear && $(CC) -o dataframe main_test.cu $(FOLDERS) $(LINKS) $(CFLAGS) -D DATAFRAME_TEST
 
 #iterator tests
 iterator.test:iterator.cu $(COVERAGE) ../source_files/*

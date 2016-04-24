@@ -7,6 +7,7 @@
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/size.hpp>
 #include <boost/mpl/transform.hpp>
+#include <boost/mpl/map.hpp>
 #include <vector>
 #include <thrust/tuple.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -16,68 +17,19 @@
 #include <cstddef> 
 #include <type_traits>
 #include <functional>
+#include "HashedArrayTree.cu"
 
-template<int n,typename vec, typename ... T>
-struct vec2tuple {
-	typedef typename boost::mpl::int_<n>				position;
-	typedef typename boost::mpl::at<vec,position>::type	element;
-	typedef typename vec2tuple<n-1,vec,element,T...>::type		type;
-};
-template<typename vec, typename ... T>
-struct vec2tuple<0,vec,T...> {
-	typedef typename boost::mpl::int_<0>				position;
-	typedef typename boost::mpl::at<vec,position>::type	element;
+namespace Flamingo{
+namespace DataFrame{
 
-	typedef std::tuple<element,T...>	type;
-};
-
-template<typename vec, typename op>
-struct transform{
-	typedef typename boost::mpl::transform<vec,op>::type type; 
-};	
-
-template<typename T>
-struct add_ref_wrap{
-	typedef std::reference_wrapper<T> type; 
-};
-
-template<int n,typename vec>
-struct assert_pod {
-	typedef typename boost::mpl::int_<n>				position;
-	typedef typename boost::mpl::at<vec,position>::type	element;
-	
-	typedef typename std::conditional<	
-		std::is_pod<element>::value,
-		typename assert_pod<n-1,vec>::type,
-		typename std::false_type::type
-						>::type type; 
-};
-template<typename vec>
-struct assert_pod<0,vec> {
-	typedef typename boost::mpl::int_<0>				position;
-	typedef typename boost::mpl::at<vec,position>::type	element;
-	
-	typedef typename std::conditional<	
-		std::is_pod<element>::value,
-		typename std::true_type,
-		typename std::false_type
-						>::type type; 
-};
-template<typename T>
-struct add_ptr_to_const{
-	typedef const T* type; 
-};
-
-template<typename T>
-struct add_const_ref{
-	typedef std::reference_wrapper<const T> type; 
-};
-
-using boost::mpl::placeholders::_1;
+#include "traits.inl"
 template<class ... Type>
 struct traits {
 	typedef std::size_t			size_type; 
 	static const size_type _numCol=sizeof...(Type);
+
+	type_add<_numCol-1,Type...> type_add_recursive;
+	size_type row_size(){ return type_add_recursive(); }; 
 
 	typedef boost::mpl::vector<Type...>	type_vector;	
 	static_assert(assert_pod<_numCol-1,type_vector>::type::value,"DataFrame Types must be POD"); 
@@ -129,5 +81,89 @@ struct traits {
 	};
 };
 
+struct column_traits_base{
+
+
+};
+
+template<Memory::Region M>
+struct memory2type{
+	typedef boost::mpl::int_<0> type; 
+};
+template<>
+struct memory2type<Memory::Region::device>{
+	typedef boost::mpl::int_<1> type; 
+};
+template<>
+struct memory2type<Memory::Region::pinned>{
+	typedef boost::mpl::int_<2> type; 
+};
+template<>
+struct memory2type<Memory::Region::unified>{
+	typedef boost::mpl::int_<3> type; 
+};
+
+
+template<typename T>
+struct column_traits{
+	static const Memory::Region device=Memory::Region::device;
+	static const Memory::Region host=Memory::Region::host;
+	static const Memory::Region pinned=Memory::Region::pinned;
+	static const Memory::Region unified=Memory::Region::unified;
+
+	typedef Memory::Region Memory_Region;
+
+
+	template<typename U>
+	using vector_base=Vector::HashedArrayTree_base<U>; 
+
+	template<typename U,Memory::Region M>
+	using hash_vector=Vector::HashedArrayTree<U,M>; 
+
+	typedef hash_vector<T,device>		device_column; 
+	typedef hash_vector<T,pinned>		pinned_column; 
+	typedef hash_vector<T,host>		host_column; 
+	typedef hash_vector<T,unified>	unified_column; 
+
+	template<class ... pairs>
+	using Map=boost::mpl::map<pairs...>;
+
+	template<typename Key,typename Value>
+	using Pair=boost::mpl::pair<Key,Value>;
+
+	typedef Map<	
+		Pair<typename memory2type<device>::type,	device_column>,
+		Pair<typename memory2type<host>::type,		host_column>,
+		Pair<typename memory2type<pinned>::type,	pinned_column>,
+		Pair<typename memory2type<unified>::type,	unified_column>
+	> map; 
+	typedef std::tuple<	
+					host_column,
+					device_column,
+					pinned_column,
+					unified_column
+				> MemoryTuple; 
+
+	typedef T									value_type;
+	typedef typename vector_base<T>::iterator		pointer; 
+	typedef typename vector_base<T>::const_iterator	const_pointer; 	
+	typedef typename host_column::size_type			size_type;
+
+	template<Memory::Region M>
+	struct Return{
+		template<typename Map,typename Key>
+		using at=boost::mpl::at<Map,Key>;
+
+		template<Memory::Region N>
+		using Memory2Type=typename memory2type<N>::type; 
+
+		typedef typename at<map,Memory2Type<M> >::type column;
+	};
+};
+
+
+}//end dataframe
+}//end flamingo
 #endif 
+
 

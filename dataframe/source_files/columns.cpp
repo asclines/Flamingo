@@ -9,66 +9,33 @@
 #include <boost/mpl/pair.hpp>
 #include <type_traits>
 #include <boost/mpl/int.hpp>
-#include "columnbase.cpp"
 #include <tuple>
+#include <HashedArrayTree.cu>
+#include <traits.cpp>
 
-template<Memory M>
-struct memory2type{
-	typedef boost::mpl::int_<0> type; 
-};
-template<>
-struct memory2type<device>{
-	typedef boost::mpl::int_<1> type; 
-};
-template<>
-struct memory2type<pinned>{
-	typedef boost::mpl::int_<2> type; 
-};
-template<>
-struct memory2type<unified>{
-	typedef boost::mpl::int_<3> type; 
-};
+namespace Flamingo {
+namespace DataFrame {
 
 template<typename T>
 struct column  {
-	typedef typename allocation_policy<T,device>::allocator device_allocator; 
-	typedef typename allocation_policy<T,pinned>::allocator pinned_allocator; 
-	typedef typename allocation_policy<T,unified>::allocator unified_allocator; 
+	typedef column_traits<T>				Traits; 
+	typedef typename Traits::MemoryTuple	MemoryTuple;	
+	typedef typename Traits::pointer		pointer;
+	typedef pointer					iterator; 
+	typedef typename Traits::const_pointer	const_pointer;
+	typedef typename Traits::size_type		size_type; 
+	typedef typename Traits::value_type	value_type;
 
-	typedef thrust::device_vector<T,device_allocator>		device_column;
-	typedef thrust::device_vector<T,pinned_allocator>		pinned_column;
-	typedef thrust::device_vector<T,unified_allocator>	unified_column;
-	typedef thrust::host_vector<T>					host_column;
-	
-	typedef boost::mpl::map<	
-		boost::mpl::pair<typename memory2type<device>::type,device_column>,
-		boost::mpl::pair<typename memory2type<host>::type,host_column>,
-		boost::mpl::pair<typename memory2type<pinned>::type,pinned_column>,
-		boost::mpl::pair<typename memory2type<unified>::type,unified_column>
-	> map; 
-	typedef std::tuple<	
-					host_column,
-					device_column,
-					pinned_column,
-					unified_column
-				> MemoryTuple; 
+	template<Memory::Region M>
+		using Return=typename Traits::Return<M>; 
 
-	typedef T					value_type;
-	typedef value_type*			pointer; 
-	typedef const value_type*	const_pointer; 	
-
-	template<Memory M>
-	struct Return{
-		typedef typename boost::mpl::at<map,typename memory2type<M>::type>::type column;
-	};
-
-	Memory		_location;
-	MemoryTuple	_tuple; 
+	template<Memory::Region M>
+		using Memory2Type=memory2type<M>; 
 
 	column();
 	column(int);
 	column(const column<T>& );
-	column(pointer ,pointer);
+	column(pointer ,pointer );
 	~column(); 
 
 	template<typename Aloc>
@@ -77,12 +44,12 @@ struct column  {
 	template<typename Aloc>
 	column(const thrust::host_vector<T,Aloc>&); 
 
-	template<Memory M>
+	template<Memory::Region M>
 	void move();
 
-	Memory getlocation()const; 
+	Memory::Region getlocation()const; 
 
-	template<Memory M>
+	template<Memory::Region M>
 	typename Return<M>::column& access(); 	
 
 	pointer data(); 
@@ -92,8 +59,8 @@ struct column  {
 	column<T>& operator=(const column<T>& );
 	bool operator==(const column<T>&)const;
 	bool operator!=(const column<T>&)const; 
+
 	//--------vector functions
-	typedef typename host_column::size_type size_type; 
 	
 	size_type size()const;
 	size_type max_size()const;
@@ -125,33 +92,21 @@ struct column  {
 
 	void resize(size_type); 
 	void resize(size_type,value_type);
-};
 
-template<int n,class ... Type>
-struct column_return{
-	typedef typename traits<Type...>::Return<n>::type		base; 
-	typedef typename column<base>::type				type;  
-};
+	template<typename iter>
+	void copy_to_array(iter,pointer)const; 
 
-template<typename T>
-struct type2column {
-	typedef column<T> type; 
-};
+	template<typename iter>
+	void push_from_array(iter); 
 
-template<class ... Type>
-struct column_tuple {
-	typedef traits<Type...> Traits; 
+	private:	
+	Memory::Region	_location;
+	MemoryTuple	_tuple; 
 
-	typedef typename Traits::type_vector vec; 
-	typedef typename transform<vec,type2column<_1> >::type col_vec;
-	typedef typename vec2tuple<Traits::_numCol-1,col_vec>::type type; 
-
-	template<int n>
-	struct element {
-		typedef boost::mpl::int_<n> position;
-		typedef typename boost::mpl::at<col_vec,position>::type type; 
-	};
 };
 
 #include "columns.inl"
+
+}
+}
 #endif 
