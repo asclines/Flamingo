@@ -53,6 +53,17 @@ class Transporter{
 			      );
 
 		/*
+		 * Broadcast method where data_size is NOT known by all processes
+		 */
+		template<typename iteratorT>
+		void Broadcast(
+				iteratorT begin,
+				iteratorT end,
+				char*& data_recv,
+				int source
+			      );
+
+		/*
 		 * Scatter method where the receiving processes don't know the data_size 
 		 */
 		void Scatter(
