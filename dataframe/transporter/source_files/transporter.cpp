@@ -6,7 +6,7 @@
 
 
 /****************************************************************************
- *	Public Method Definitions
+ *	Public Method Definitions - Constructors/Destructors
  ****************************************************************************/
 
 Transporter::Transporter(){
@@ -24,7 +24,9 @@ Transporter::~Transporter(){
 	MPI_Finalize();
 }
 
-
+/****************************************************************************
+ *	Public Method Defintions - Utils
+ ****************************************************************************/
 ProcessInfo Transporter::GetProcessInfo(){
 	return process_info_;
 }
@@ -43,6 +45,11 @@ std::string Transporter::GetSummary(){
 
 	return summary;
 }
+
+
+/****************************************************************************
+ *	Public Method Definitions - MPI Operations
+ ****************************************************************************/
 
 void Transporter::Broadcast(
 		char* send_data,
@@ -64,7 +71,51 @@ void Transporter::Broadcast(
 			MPI_COMM_WORLD
 		);
 
+}
+
+
+void Transporter::Scatter(
+		vector_str* send_data,
+		char*& recv_data,
+		int recv_size,
+		int source
+		){
+	int data_size = process_info_.world_size;
+	std::string buffer_str;
+	int* send_count = new int[data_size];
+	int* send_displ = new int[data_size];
+	int send_size = 0;
+	
+	if(process_info_.world_rank == source){
+	
+		for(int i =0 ; i <data_size; i++){
+			int size = send_data->at(i).size();
+			buffer_str.append(send_data->data()[i]);
+			send_count[i] = size;
+			send_displ[i] = send_size;
+			send_size+=size;
+		}
 	}
+
+	recv_data = (char *)malloc(sizeof(char) * recv_size);
+
+	char* buffer = new char[buffer_str.size()+1];
+	buffer[buffer_str.size()] = 0;
+	memcpy(buffer,buffer_str.c_str(),buffer_str.size());
+	
+	MPI_Scatterv(
+			buffer,
+			send_count,
+			send_displ,
+			MPI_CHAR,
+			recv_data,
+			recv_size,
+			MPI_CHAR,
+			source,
+			MPI_COMM_WORLD
+		    );
+}
+
 
 /****************************************************************************
  *	Private Method Definitions

@@ -2,6 +2,8 @@
 #define TRANSPORTER_H
 
 #include <string>
+#include <vector>
+#include <string>
 
 struct ProcessInfo{
 	int world_size;
@@ -11,6 +13,10 @@ struct ProcessInfo{
 
 class Transporter{
 	public:
+//Typedefs
+	typedef std::vector<std::string> vector_str;
+	typedef std::vector<std::string>::iterator iterator_str;
+		
 //Constructors / Destructors 
 		
 		Transporter();
@@ -29,7 +35,10 @@ class Transporter{
 				int data_size, // Number of elements in send_data
 				int source //Node ID of process sending data
 			      );
-
+		
+		/*
+		 * Broadcast method where data_size is known by all processes
+		 */
 		template<typename iteratorT>
 		void Broadcast(
 				iteratorT begin,
@@ -39,8 +48,18 @@ class Transporter{
 				int source
 			      );
 
+		/*
+		 * Scatter method where the process knows the size of data being recieved
+		 */
+		void Scatter(
+				vector_str* send_data,
+				char*& recv_data,
+				int recv_size,
+				int source
+			    );
 	private:
-
+//Methods - MPI Operations
+		
 //Data members
 
 		ProcessInfo process_info_;
