@@ -29,6 +29,10 @@ class Transporter{
 		std::string GetSummary(); //For debugging use
 
 //Methods - MPI Operations
+		
+		/*
+		 * Broadcast method where data_size is known by all processes
+		 */
 		void Broadcast(
 				char* send_data, //Null if not source
 				char*& recv_data, //Empty pointer
@@ -65,7 +69,16 @@ class Transporter{
 		int ScatterInt(
 				int* send_data, //Array of ints with size == number of processes
 				int source
-				);		
+				);
+
+		/*
+		 * Broadcast method used to send a single int to processes
+		 */		
+		void BroadcastInt(
+				int* value, //The value being broadcasted
+				int source
+				);
+
 //Methods - Utils
 		void Log(std::string message);
 //Data members

@@ -143,14 +143,22 @@ int Transporter::ScatterInt(
 			source,
 			MPI_COMM_WORLD
 		   );
-//	std::string message = "recv_int = ";
-//	message.append(std::to_string(recv_int));
-//	Log(message);
 	return recv_int;
 
 }
 
+void Transporter::BroadcastInt(
+		int* value,
+		int source){
 
+	MPI_Bcast(
+			value,
+			1,
+			MPI_INT,
+			source,
+			MPI_COMM_WORLD
+		);
+}
 /****************************************************************************
  *	Private Method Definitions - Utils
  ****************************************************************************/
