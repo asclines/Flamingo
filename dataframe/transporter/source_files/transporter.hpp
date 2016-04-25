@@ -49,17 +49,25 @@ class Transporter{
 			      );
 
 		/*
-		 * Scatter method where the process knows the size of data being recieved
+		 * Scatter method where the receiving processes don't know the data_size 
 		 */
 		void Scatter(
 				vector_str* send_data,
 				char*& recv_data,
-				int recv_size,
 				int source
 			    );
 	private:
 //Methods - MPI Operations
-		
+
+		/*
+		 * Scatter method used to send an array of ints to processess, 1 int per process
+		 */
+		int ScatterInt(
+				int* send_data, //Array of ints with size == number of processes
+				int source
+				);		
+//Methods - Utils
+		void Log(std::string message);
 //Data members
 
 		ProcessInfo process_info_;

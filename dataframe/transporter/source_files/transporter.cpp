@@ -77,7 +77,6 @@ void Transporter::Broadcast(
 void Transporter::Scatter(
 		vector_str* send_data,
 		char*& recv_data,
-		int recv_size,
 		int source
 		){
 	int data_size = process_info_.world_size;
@@ -96,6 +95,13 @@ void Transporter::Scatter(
 			send_size+=size;
 		}
 	}
+
+
+	//Let every process know how much data they should expect to recieve
+	int recv_size = ScatterInt(
+				send_count,
+				source
+			);
 
 	recv_data = (char *)malloc(sizeof(char) * recv_size);
 
@@ -118,6 +124,39 @@ void Transporter::Scatter(
 
 
 /****************************************************************************
- *	Private Method Definitions
+ *	Private Method Definitions - MPI Operations
  ****************************************************************************/
 
+int Transporter::ScatterInt(
+		int* send_data,
+		int source
+		){
+	int recv_int;
+
+	MPI_Scatter(
+			send_data,
+			1,
+			MPI_INT,
+			&recv_int,
+			1,
+			MPI_INT,
+			source,
+			MPI_COMM_WORLD
+		   );
+//	std::string message = "recv_int = ";
+//	message.append(std::to_string(recv_int));
+//	Log(message);
+	return recv_int;
+
+}
+
+
+/****************************************************************************
+ *	Private Method Definitions - Utils
+ ****************************************************************************/
+
+void Transporter::Log(
+		std::string message
+		){
+	std::cout << "Process[" << process_info_.world_rank << "] : " << message << std::endl;
+}
