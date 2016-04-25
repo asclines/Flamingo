@@ -50,9 +50,8 @@ void Transporter::Broadcast(
 		int data_size,
 		int source){
 
-	if(process_info_.world_rank == source){
+	if(process_info_.world_rank == source){		
 		buffer = send_data;
-
 	} else{
 		buffer = (char *)malloc(sizeof(char) * data_size);
 	}
@@ -64,7 +63,8 @@ void Transporter::Broadcast(
 			source,
 			MPI_COMM_WORLD
 		);
-}
+
+	}
 
 /****************************************************************************
  *	Private Method Definitions

@@ -11,7 +11,6 @@ struct ProcessInfo{
 
 class Transporter{
 	public:
-	 
 //Constructors / Destructors 
 		
 		Transporter();
@@ -31,6 +30,15 @@ class Transporter{
 				int source //Node ID of process sending data
 			      );
 
+		template<typename iteratorT>
+		void Broadcast(
+				iteratorT begin,
+				iteratorT end,
+				int data_size,
+				char*& data_recv,
+				int source
+			      );
+
 	private:
 
 //Data members
@@ -39,5 +47,5 @@ class Transporter{
 
 };
 
-
+#include "transporter.inl"
 #endif
