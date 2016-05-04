@@ -99,4 +99,5 @@ class Transporter{
 };
 
 #include "transporter.inl"
+#include "transporter.cpp"
 #endif
