@@ -1,9 +1,14 @@
 #ifndef TRANSPORTER_H
 #define TRANSPORTER_H
 
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wliteral-suffix"
+#include <mpi.h>
 #include <string>
 #include <vector>
 #include <string>
+
+#pragma GCC diagnostic pop
 
 struct ProcessInfo{
 	int world_size;
@@ -16,7 +21,9 @@ class Transporter{
 //Typedefs
 	typedef std::vector<std::string> vector_str;
 	typedef std::vector<std::string>::iterator iterator_str;
-		
+	typedef char var; //Unit type for data being send
+	typedef char* varptr;
+
 //Constructors / Destructors 
 		
 		Transporter();
@@ -24,9 +31,15 @@ class Transporter{
 
 //Methods - Utils
 
+		void Log(std::string message);
+
 		ProcessInfo GetProcessInfo();
 		
 		std::string GetSummary(); //For debugging use
+
+		int GetWindowSize(); //Returns flag status
+
+		char * GetWindowAddress(); //Return pointer to base address of window
 
 //Methods - MPI Operations
 		
@@ -71,6 +84,20 @@ class Transporter{
 				char*& recv_data,
 				int source
 			    );
+
+		bool RequestWindow(
+				int* counts, 
+				int*& recv_displ
+				);
+
+		void CloseWindow();
+
+		void Send(
+				char* data,
+				int size,
+				int dest,
+				int displ
+			 );
 	private:
 //Methods - MPI Operations
 
@@ -91,10 +118,11 @@ class Transporter{
 				);
 
 //Methods - Utils
-		void Log(std::string message);
 //Data members
-
+		var *window_base_addr_;	
 		ProcessInfo process_info_;
+		MPI_Win window_;
+		MPI_Group group_; //Group of all process
 
 };
 

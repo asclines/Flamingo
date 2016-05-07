@@ -47,6 +47,19 @@ std::string Transporter::GetSummary(){
 }
 
 
+
+int Transporter::GetWindowSize(){
+	int flag;
+	int *size;
+	MPI_Win_get_attr(window_,MPI_WIN_SIZE,&size,&flag);
+	return *size;
+
+}
+
+char * Transporter::GetWindowAddress(){
+	return window_base_addr_;
+}
+
 /****************************************************************************
  *	Public Method Definitions - MPI Operations
  ****************************************************************************/
@@ -121,6 +134,119 @@ void Transporter::Scatter(
 			MPI_COMM_WORLD
 		    );
 }
+
+
+bool Transporter::RequestWindow(int* counts, int*& recv_buffer){ //After program runs, counts holds the displ values
+
+	recv_buffer = (int *)malloc(sizeof(int) * process_info_.world_size); //First used to hold recv_counts then to hold recv_displ
+	int* send_displ = (int *)malloc(sizeof(int) * process_info_.world_size); //Values are size in bytes
+	int total_recv_counts;
+	int mpi_error_value = 0;	
+	//Send number of elements wanting to send to each process
+	mpi_error_value = MPI_Alltoall(
+				counts,
+				1,
+				MPI_INT,
+				recv_buffer,
+				1,
+				MPI_INT,
+				MPI_COMM_WORLD
+			);
+
+
+	//Iterate through recv_counts to determine total size of memory needed and displacement
+	send_displ[0] = 0;
+	total_recv_counts = 0;
+	for(int i = 0; i < process_info_.world_size-1; i++){
+		int isize = recv_buffer[i] * sizeof(var);
+		send_displ[i+1] = send_displ[i] + isize;
+		total_recv_counts+= recv_buffer[i];
+	}
+	total_recv_counts+=recv_buffer[process_info_.world_size-1];
+
+	//Send out displacement to each process
+	mpi_error_value = MPI_Alltoall(
+				send_displ,
+				1,
+				MPI_INT,
+				recv_buffer,
+				1,
+				MPI_INT,
+				MPI_COMM_WORLD
+			    );
+
+	//Create window
+	int window_size = total_recv_counts * sizeof(var); 
+//		Log("total_recv_counts = " +
+//			std::to_string(total_recv_counts) +
+//			" window_size = " + 
+//			std::to_string(window_size)
+//		);
+
+	MPI_Alloc_mem(window_size,MPI_INFO_NULL, &window_base_addr_);
+	window_base_addr_[0] = 'X';
+	mpi_error_value = MPI_Win_create(
+				window_base_addr_,
+				window_size,
+				sizeof(var),
+				MPI_INFO_NULL,
+				MPI_COMM_WORLD,
+				&window_
+			      );
+//	MPI_Win_fence(0,window_);	
+
+	MPI_Comm_group(
+		MPI_COMM_WORLD,
+		&group_
+		);
+
+//	MPI_Win_start(group_,0,window_);
+
+///	MPI_Win_fence(0,window_);
+
+	*counts = *recv_buffer;
+//	MPI_Barrier(MPI_COMM_WORLD);
+	
+//	MPI_Win_post(group_,0,window_);
+	return(mpi_error_value == 0);	
+}
+
+void Transporter::CloseWindow(){
+//	MPI_Win_complete(window_);
+//	MPI_Win_fence(0,window_);
+	MPI_Win_free(&window_);
+//	Log("Window Closed");
+}
+
+void Transporter::Send(
+			var *data,
+			int size,
+			int dest,
+			int displ){
+
+	int mpi_error_value = 0;
+//	MPI_Win_start(group_,0,window_);
+//	Log("Send: size = " + std::to_string(size) + " dest = " + std::to_string(dest) + " displ = " + std::to_string(displ));
+
+	MPI_Win_lock(MPI_LOCK_EXCLUSIVE,dest,0,window_);
+	mpi_error_value = MPI_Put(
+				data,
+				size,
+				MPI_CHAR,
+				dest,
+				displ,
+				size,
+				MPI_CHAR,
+				window_
+			);
+	MPI_Win_unlock(dest,window_);
+	
+//	Log("mpi_error_value = " + std::to_string(mpi_error_value));
+//	MPI_Win_complete(window_);
+	MPI_Win_fence(0,window_);
+
+}
+
 
 
 /****************************************************************************
