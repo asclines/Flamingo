@@ -16,13 +16,14 @@ struct ProcessInfo{
 	std::string name;
 };
 
+	
+
 class Transporter{
 	public:
 //Typedefs
 	typedef std::vector<std::string> vector_str;
 	typedef std::vector<std::string>::iterator iterator_str;
 	typedef char var; //Unit type for data being send
-	typedef char* varptr;
 
 //Constructors / Destructors 
 		
@@ -39,7 +40,9 @@ class Transporter{
 
 		int GetWindowSize(); //Returns flag status
 
-		char * GetWindowAddress(); //Return pointer to base address of window
+		void GetWindowAddress(var *addr); //Return pointer to base address of window
+
+		void Checkpoint(); //Blocks processes until this point has been reached
 
 //Methods - MPI Operations
 		
@@ -85,18 +88,14 @@ class Transporter{
 				int source
 			    );
 
-		bool RequestWindow(
-				int* counts, 
-				int*& recv_displ
-				);
+		bool OpenTransport(int* counts);
 
-		void CloseWindow();
+		void CloseTransport();
 
-		void Send(
+		bool Transport(
 				char* data,
 				int size,
-				int dest,
-				int displ
+				int dest
 			 );
 	private:
 //Methods - MPI Operations
@@ -120,6 +119,7 @@ class Transporter{
 //Methods - Utils
 //Data members
 		var *window_base_addr_;	
+		int *displ; //array of size equal to world size where value is the displacement in the window at the node with value of index in this array
 		ProcessInfo process_info_;
 		MPI_Win window_;
 		MPI_Group group_; //Group of all process
