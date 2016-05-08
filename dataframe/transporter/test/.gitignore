@@ -1,0 +1,3 @@
+mpibin/*
+*.out
+test_all
