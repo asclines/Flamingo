@@ -9,9 +9,9 @@
  *	Public Method Definitions - Constructors/Destructors
  ****************************************************************************/
 
-Transporter::Transporter(){
+Transporter::Transporter(bool debug){
 	MPI_Init(NULL,NULL);
-
+	DEBUG = debug;
 	MPI_Comm_size(MPI_COMM_WORLD, &process_info_.world_size);  
 	MPI_Comm_rank(MPI_COMM_WORLD, &process_info_.world_rank);
 	char name[MPI_MAX_PROCESSOR_NAME];  

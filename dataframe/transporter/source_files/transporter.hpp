@@ -1,14 +1,11 @@
 #ifndef TRANSPORTER_H
 #define TRANSPORTER_H
 
-#pragma GCC diagnostic push 
-#pragma GCC diagnostic ignored "-Wliteral-suffix"
 #include <mpi.h>
 #include <string>
 #include <vector>
 #include <string>
 
-#pragma GCC diagnostic pop
 
 struct ProcessInfo{
 	int world_size;
@@ -27,7 +24,7 @@ class Transporter{
 
 //Constructors / Destructors 
 		
-		Transporter();
+		Transporter(bool debug = false);
 		~Transporter();
 
 //Methods - Utils
@@ -118,11 +115,13 @@ class Transporter{
 
 //Methods - Utils
 //Data members
+		bool DEBUG;
 		var *window_base_addr_;	
 		int *displ; //array of size equal to world size where value is the displacement in the window at the node with value of index in this array
 		ProcessInfo process_info_;
 		MPI_Win window_;
 		MPI_Group group_; //Group of all process
+		
 
 };
 
