@@ -22,6 +22,7 @@ class Transporter{
 	typedef std::vector<std::string>::iterator iterator_str;
 	typedef char var; //Unit type for data being send
 
+	var *window_base_addr_;	
 //Constructors / Destructors 
 		
 		Transporter(bool debug = false);
@@ -116,7 +117,6 @@ class Transporter{
 //Methods - Utils
 //Data members
 		bool DEBUG;
-		var *window_base_addr_;	
 		int *displ; //array of size equal to world size where value is the displacement in the window at the node with value of index in this array
 		ProcessInfo process_info_;
 		MPI_Win window_;
