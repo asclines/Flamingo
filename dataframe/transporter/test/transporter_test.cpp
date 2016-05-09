@@ -14,7 +14,7 @@ class TransporterTest : public ::testing::Test{
 
 protected:
 
-	TransporterTest() : transporter(false){}	
+//	TransporterTest() : transporter(false){}	
 	static void SetUpTestCase(){
 		
 	}
