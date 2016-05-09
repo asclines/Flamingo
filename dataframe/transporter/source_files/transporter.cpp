@@ -155,6 +155,7 @@ bool Transporter::OpenTransport(int* counts){
 				MPI_COMM_WORLD
 			);
 
+	Log("OpenTransport: Sent counts with sucess " + std::to_string(mpi_error_value));
 
 	//Iterate through recv_counts to determine total size of memory needed and displacement
 	send_displ[0] = 0;
@@ -177,6 +178,7 @@ bool Transporter::OpenTransport(int* counts){
 				MPI_COMM_WORLD
 			    );
 
+	Log("OpenTransport: Sent displacement with success " + std::to_string(mpi_error_value));
 	//Create window
 	int window_size = total_recv_counts * sizeof(var); 
 
@@ -186,7 +188,10 @@ bool Transporter::OpenTransport(int* counts){
 				&window_base_addr_
 				);
 
+	Log("OpenTransport: Allocated window memory with sucess " + std::to_string(mpi_error_value));
+
 	window_base_addr_[0] = 'X';
+	
 
 	mpi_error_value = MPI_Win_create(
 				window_base_addr_,
@@ -197,12 +202,16 @@ bool Transporter::OpenTransport(int* counts){
 				&window_
 			      );
 	
+	Log("OpenTransport: Created window with success " + std::to_string(mpi_error_value));
+
 	mpi_error_value = MPI_Comm_group(
 			MPI_COMM_WORLD,
 			&group_
 			);
 
 
+	Log("OpenTransport: Created window group with success " + std::to_string(mpi_error_value));
+	free(send_displ);
 	displ = recv_buffer;
 	
 	return(mpi_error_value == 0);	
@@ -210,6 +219,7 @@ bool Transporter::OpenTransport(int* counts){
 
 void Transporter::CloseTransport(){
 	MPI_Win_free(&window_);
+	Log("CloseTransport: Closed");
 }
 
 bool Transporter::Transport(
@@ -282,5 +292,7 @@ void Transporter::BroadcastInt(
 void Transporter::Log(
 		std::string message
 		){
-	std::cout << "Process[" << process_info_.world_rank << "] : " << message << std::endl;
+	if(DEBUG){
+		std::cout << "Process[" << process_info_.world_rank << "] : " << message << std::endl;
+	}
 }
