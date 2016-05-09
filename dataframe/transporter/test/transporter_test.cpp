@@ -38,7 +38,9 @@ protected:
 		rank = transporter.GetProcessInfo().world_rank;
 	}
 
-	void LogOnce(std::string message){
+	void LogTitle(std::string message){
+		transporter.Checkpoint();
+
 		if(transporter.GetProcessInfo().world_rank == 0){
 			std::ofstream output_file ("output_test.out", std::ios::out| std::ios::app);
 	
@@ -79,19 +81,32 @@ protected:
 		output_file << out;
 		output_file.close();
 	}	
+
+	void LogOnce(std::string message){
+		int node = 0;
+
+		if(node == rank){
+			Log(message);
+		}
+	}
 };
 
-
+/**
+ * TEST 1:
+ * Tests sending data of same length to all processes
+ **/
 
 TRTEST(Test1){
 	Init("Test1");
-	LogOnce("Starting, all processes check in!");
+	LogTitle("Starting, all processes check in!");
 	Log("Ready!");	
 
 	int* counts = (int *)malloc(sizeof(int) * world_size);
 	std::string data[world_size];
-	int count = 5; //Number of elements to send to each node
+	int count = 50000; //Number of elements to send to each node
 
+
+	LogTitle("All processes, prepare data!");
 	for(int i = 0; i < world_size; i++){
 		counts[i] = count;
 
@@ -101,54 +116,50 @@ TRTEST(Test1){
 	}
 
 
-		bool success = transporter.OpenTransport(counts);
+	LogTitle("All processes, open transports!");
+	bool success = transporter.OpenTransport(counts);
 
-		ASSERT_TRUE(success);
+	ASSERT_TRUE(success);
 
-		transporter.Checkpoint();
+	transporter.Checkpoint();
 
-		//Verify that the memory was allocated. If so, the first element is X (X marks the spot :) )
-		char * addr;
-		transporter.GetWindowAddress(&*addr);
-		
-		Log("Window[0] = " + std::to_string(addr[0]));
-		
-		ASSERT_TRUE(addr[0] == 'X');
-		int expected_size = count * world_size;
-		int actual_size = transporter.GetWindowSize();
-		ASSERT_EQ(expected_size,actual_size);
+	//Verify that the memory was allocated. If so, the first element is X (X marks the spot :) )	
+	ASSERT_TRUE(transporter.window_base_addr_[0] == 'X');
 
-		//Send stuff
-		for(int i = 0; i <world_size; i++){
-			char * c_data = new char[world_size];
+	LogTitle("All processes, check windows!");
 
-			std::strcpy(c_data,data[i].c_str());
+	//Verify size is correct
+	int expected_size = count * world_size;
+	int actual_size = transporter.GetWindowSize();
+	ASSERT_EQ(expected_size,actual_size);
 
-			transporter.Transport(
-					c_data,
-					data[i].length(),
-					i
-					);
+	LogTitle("All processes, send your data!");
+	//Send stuff
+	for(int i = 0; i <world_size; i++){
+		char * c_data = new char[count];
+		std::strcpy(c_data,data[i].c_str());
+		transporter.Transport(
+				c_data,
+				data[i].length(),
+				i
+				);
 
-		}
+	}
 
-		//Now check that we recieved all the data
+	//Now check that we recieved all the data
 	
-		transporter.Checkpoint();	
-		std::string message = "After send, Window = ";
-		for(int i = 0; i < transporter.GetWindowSize(); i++){
-			message.push_back(addr[i]);
+	transporter.Checkpoint();	
+	LogTitle("All processes, check your data!");
+	for(int i = 0; i < transporter.GetWindowSize(); i++){
+		EXPECT_EQ(transporter.window_base_addr_[i],rank + '0') 
+			<< "For process "
+			<< rank 
+			<< " Expected rank, instead got "
+			<< transporter.window_base_addr_[i];
 
-		//	EXPECT_TRUE(addr[i] == rank) 
-		//		<< "For process "
-		//		<< rank 
-		//		<< " Expected rank, instead got "
-		//		<< addr[i];
+	}
 
-		}
 
-		Log(message);
-
-		transporter.CloseTransport();
+	transporter.CloseTransport();
 
 }
