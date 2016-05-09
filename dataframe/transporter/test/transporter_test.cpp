@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <climits>
 
 #define TRTEST(name)\
 	TEST_F(TransporterTest,name)
@@ -26,33 +27,48 @@ protected:
 	virtual void TearDown(){
 
 	}
+	std::string file_log;
+	std::ofstream output_log;
 
 	Transporter transporter;
 	int world_size;
 	int rank;
+	std::string process_name;
 	std::string test_name;
 
 	void Init(std::string name){
-		test_name = name;
+			test_name = name;
 		world_size = transporter.GetProcessInfo().world_size;
 		rank = transporter.GetProcessInfo().world_rank;
+		process_name = transporter.GetProcessInfo().name;
+
+		file_log = "out/";
+		file_log.append(name);
+		file_log.push_back('-');
+		file_log.append(std::to_string(rank));
+		file_log.append(".out");
+
+		output_log.open(file_log,std::ios::out|std::ios::app);
+
+
 	}
 
 	void LogTitle(std::string message){
 		transporter.Checkpoint();
 
-		if(transporter.GetProcessInfo().world_rank == 0){
-			std::ofstream output_file ("output_test.out", std::ios::out| std::ios::app);
+//		if(rank == 0){
+//			std::ofstream output_file (file_log, std::ios::out| std::ios::app);
 	
 			std::string out = "\n<----------";
 			out.append(message);
 			out.append("---------->\n");
-	
-			if(output_file.is_open()){
-				output_file << out;
-				output_file.close();
+			if(output_log.is_open()){
+				output_log << out;
+			} else{
+				std::cout << "No log!" << std::endl;
 			}
-		}
+	//		std::cout << out;
+		//}
 
 		transporter.Checkpoint();
 	}
@@ -71,15 +87,19 @@ protected:
 		out.append("]:");	       
 		out.append(message);
 		out.append("\n");
-
-
-		std::ofstream output_file ("output_test.out", std::ios::out| std::ios::app);
 			
-		while(!output_file.is_open()){
-		}
+	//	std::cout << out;
 
-		output_file << out;
-		output_file.close();
+	//	std::ofstream output_file ("output_test.out", std::ios::out| std::ios::app);
+			
+	//	while(!output_file.is_open()){
+	//	}
+		
+		if(output_log.is_open()){
+			output_log << out;
+		} else{
+			std::cout << "No log2" << std::endl;
+		}
 	}	
 
 	void LogOnce(std::string message){
@@ -98,12 +118,18 @@ protected:
 
 TRTEST(Test1){
 	Init("Test1");
+	LogOnce("World size = " + std::to_string(world_size));
 	LogTitle("Starting, all processes check in!");
-	Log("Ready!");	
+
+	transporter.Checkpoint();
+	Log(process_name + " ready!");	
+
+	transporter.Checkpoint();
+
 
 	int* counts = (int *)malloc(sizeof(int) * world_size);
 	std::string data[world_size];
-	int count = 50000; //Number of elements to send to each node
+	int count = 50; //Number of elements to send to each node
 
 
 	LogTitle("All processes, prepare data!");
@@ -159,7 +185,7 @@ TRTEST(Test1){
 
 	}
 
-
+	output_log.close();
 	transporter.CloseTransport();
 
 }

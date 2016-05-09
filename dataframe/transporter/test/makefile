@@ -25,6 +25,9 @@ F_TEST=./*.cpp
 T_TEST=$(SRC)/*
 
 run: clean
+	mpirun -n $(NP) test_all
+
+runlog: clean
 	mpirun -n $(NP) test_all >> test.out
 
 clean:
