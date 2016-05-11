@@ -31,7 +31,7 @@ runlog: clean
 	mpirun -n $(NP) test_all >> test.out
 
 clean:
-	@(rm *.out ) &> /dev/null || true
+	@(rm *.out out/*.out) &> /dev/null || true
 
 test: $(F_TEST) $(T_TEST)
 	$(CC) $(FLAGS) $(LIBS) $(IN_T) -o test_all main_test.cpp  $(IN_MPI) $(DB)

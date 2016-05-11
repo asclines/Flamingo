@@ -8,7 +8,7 @@
 
 
 echo "Starting"
-NN=5 # Number of nodes
+NN=6 # Number of nodes
 NT=5 # Number of tasks
 NPN=1 # Number of tasks per nodes
 
@@ -51,11 +51,11 @@ fi
 echo "Cleaning files from previous runs"
 make clean
 
-#echo "Making test"
-#make test
+echo "Making test"
+make test
 
 echo "Running test"
-SOUT=$(sbatch -N $NN ./scripts/sbatch_transporter.sh)
+SOUT=$(sbatch -N $NN ./scripts/transporter_test_sbatch.sh)
 SJOB=${SOUT: -3} # Gets last 3 characters of SOUT command which should be the job number # TODO switch to getting all characters after last space for X digit numbers instead of 3, just in case..
 
 echo "Running job $SJOB"

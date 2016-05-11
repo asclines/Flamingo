@@ -48,7 +48,6 @@ protected:
 		file_log.append(std::to_string(rank));
 		file_log.append(".out");
 
-		output_log.open(file_log,std::ios::out|std::ios::app);
 
 
 	}
@@ -56,19 +55,15 @@ protected:
 	void LogTitle(std::string message){
 		transporter.Checkpoint();
 
-//		if(rank == 0){
-//			std::ofstream output_file (file_log, std::ios::out| std::ios::app);
-	
-			std::string out = "\n<----------";
-			out.append(message);
-			out.append("---------->\n");
-			if(output_log.is_open()){
-				output_log << out;
-			} else{
-				std::cout << "No log!" << std::endl;
-			}
-	//		std::cout << out;
-		//}
+		std::string out = "\n<----------";
+		out.append(message);
+		out.append("---------->\n");
+
+		output_log.open(file_log,std::ios::out|std::ios::app);
+		if(output_log.is_open()){
+			output_log << out;
+			output_log.close();
+		}
 
 		transporter.Checkpoint();
 	}
@@ -88,27 +83,14 @@ protected:
 		out.append(message);
 		out.append("\n");
 			
-	//	std::cout << out;
-
-	//	std::ofstream output_file ("output_test.out", std::ios::out| std::ios::app);
-			
-	//	while(!output_file.is_open()){
-	//	}
 		
+		output_log.open(file_log,std::ios::out|std::ios::app);
 		if(output_log.is_open()){
 			output_log << out;
-		} else{
-			std::cout << "No log2" << std::endl;
+			output_log.close();
 		}
 	}	
 
-	void LogOnce(std::string message){
-		int node = 0;
-
-		if(node == rank){
-			Log(message);
-		}
-	}
 };
 
 /**
@@ -118,7 +100,9 @@ protected:
 
 TRTEST(Test1){
 	Init("Test1");
-	LogOnce("World size = " + std::to_string(world_size));
+	Log("World size = " + std::to_string(world_size));
+	Log("INT_MAX = " + std::to_string(INT_MAX));
+
 	LogTitle("Starting, all processes check in!");
 
 	transporter.Checkpoint();
@@ -129,48 +113,70 @@ TRTEST(Test1){
 
 	int* counts = (int *)malloc(sizeof(int) * world_size);
 	std::string data[world_size];
-	int count = 50; //Number of elements to send to each node
+
+	// Note: count cannot be >= (INT_MAX / world_size) -1 TODO: <- confirm that
+	int count = 5000 ;//(INT_MAX / ( 2 * world_size)); //Number of elements to send to each node
 
 
 	LogTitle("All processes, prepare data!");
 	for(int i = 0; i < world_size; i++){
 		counts[i] = count;
 
+		Log("Sending " + std::to_string(counts[i]) + " elements to process[" + std::to_string(i)+"]");
 		for( int j = 0; j < counts[i]; j++){
 			data[i].append(std::to_string(i));
 		}
+		Log("Data for process[" + std::to_string(i) + "] prepared");
 	}
 
 
 	LogTitle("All processes, open transports!");
 	bool success = transporter.OpenTransport(counts);
 
-	ASSERT_TRUE(success);
+	ASSERT_TRUE(success) << "Failed to open transport";
 
+	Log("Transport opened");
 	transporter.Checkpoint();
 
 	//Verify that the memory was allocated. If so, the first element is X (X marks the spot :) )	
-	ASSERT_TRUE(transporter.window_base_addr_[0] == 'X');
+	ASSERT_TRUE(transporter.window_base_addr_[0] == 'X') << "Window base address not initialized";
+	Log("Memory window is valid");
 
 	LogTitle("All processes, check windows!");
 
 	//Verify size is correct
 	int expected_size = count * world_size;
 	int actual_size = transporter.GetWindowSize();
-	ASSERT_EQ(expected_size,actual_size);
+	ASSERT_EQ(expected_size,actual_size) << "Window size was not what was expected";
+	Log("Window size = " + std::to_string(actual_size));
 
 	LogTitle("All processes, send your data!");
 	//Send stuff
-	for(int i = 0; i <world_size; i++){
+	for(int i = rank; i <world_size; i++){
 		char * c_data = new char[count];
 		std::strcpy(c_data,data[i].c_str());
+		Log("Sending data to process["+std::to_string(i)+"]");
 		transporter.Transport(
 				c_data,
 				data[i].length(),
 				i
 				);
-
+		Log("Sent data to process["+std::to_string(i)+"]");
 	}
+
+	for(int i = 0; i < rank; i++){
+		char * c_data = new char[count];
+		std::strcpy(c_data,data[i].c_str());
+		Log("Sending data to process["+std::to_string(i)+"]");
+
+		transporter.Transport(
+				c_data,
+				data[i].length(),
+				i
+				);
+		Log("Sent data to process["+std::to_string(i)+"]");
+	}
+
 
 	//Now check that we recieved all the data
 	
@@ -184,8 +190,12 @@ TRTEST(Test1){
 			<< transporter.window_base_addr_[i];
 
 	}
+	Log("All data recieved");
 
-	output_log.close();
+	//Note: As of current, transporter class does NOT free this memory
+	free(transporter.window_base_addr_);
 	transporter.CloseTransport();
+
+	Log("Done");
 
 }

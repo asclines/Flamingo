@@ -1,3 +1,10 @@
+# Used on Schoenberg to link to MPI commands as they are not in PATH
 mpibin
+
+# Outputs from make commands
 *.out
 test_all
+
+
+# Log files
+logs/

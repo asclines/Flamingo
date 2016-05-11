@@ -48,17 +48,14 @@ std::string Transporter::GetSummary(){
 
 
 
-int Transporter::GetWindowSize(){
+Transporter::sizev Transporter::GetWindowSize(){
 	int flag;
-	int *size;
+	sizev *size;
 	MPI_Win_get_attr(window_,MPI_WIN_SIZE,&size,&flag);
 	return *size;
 
 }
 
-void Transporter::GetWindowAddress(var *addr){
-	*addr = *window_base_addr_;
-}
 
 void Transporter::Checkpoint(){
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -142,7 +139,7 @@ void Transporter::Scatter(
 bool Transporter::OpenTransport(int* counts){
 	int* recv_buffer = (int *)malloc(sizeof(int) * process_info_.world_size); //First used to hold recv_counts then to hold recv_displ
 	int* send_displ = (int *)malloc(sizeof(int) * process_info_.world_size); //Values are size in bytes
-	int total_recv_counts;
+	sizev total_recv_counts;
 	int mpi_error_value = 0;	
 	//Send number of elements wanting to send to each process
 	mpi_error_value = MPI_Alltoall(
@@ -180,7 +177,7 @@ bool Transporter::OpenTransport(int* counts){
 
 	Log("OpenTransport: Sent displacement with success " + std::to_string(mpi_error_value));
 	//Create window
-	int window_size = total_recv_counts * sizeof(var); 
+	sizev window_size = total_recv_counts * sizeof(var); 
 
 	mpi_error_value = MPI_Alloc_mem(
 				window_size,
@@ -242,7 +239,7 @@ bool Transporter::Transport(
 			);
 	MPI_Win_unlock(dest,window_);
 	
-	MPI_Win_fence(0,window_);
+	//MPI_Win_fence(0,window_);
 	
 	return(mpi_error_value == 0);
 }
