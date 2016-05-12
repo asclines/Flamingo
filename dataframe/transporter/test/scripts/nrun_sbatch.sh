@@ -5,7 +5,7 @@
 echo "Running in background"
 
 
-nohup scripts/run_sbatch.sh &
+nohup ./scripts/run_sbatch.sh -s &
 
 echo "Started"
 

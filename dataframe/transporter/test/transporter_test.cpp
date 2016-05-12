@@ -16,7 +16,8 @@ class TransporterTest : public ::testing::Test{
 
 protected:
 
-//	TransporterTest() : transporter(false){}	
+	typedef Transporter::sizev sizev;
+
 	static void SetUpTestCase(){
 		
 	}
@@ -34,12 +35,21 @@ protected:
 	int rank;
 	std::string process_name;
 	std::string test_name;
+	TransportLogger logger;
 
 	void Init(std::string name){
 		test_name = name;
 		world_size = transporter.GetProcessInfo().world_size;
 		rank = transporter.GetProcessInfo().world_rank;
 		process_name = transporter.GetProcessInfo().name;
+
+		logger.SetProcessInfo(
+				world_size,
+				rank,
+				process_name
+				);
+
+	logger.SetLogToFile(std::to_string(rank) + "-" + test_name);
 	}
 
 };
@@ -51,12 +61,13 @@ protected:
 
 TRTEST(Test1){
 	Init("Test1");
-	TransportLogger logger(transporter.GetProcessInfo());
-	logger.SetLogToFile(std::to_string(rank) + "-Test1");
+	logger.ToggleDebug(true);
+	logger.ToggleSTDOUT(false);
+
 	logger.LogTitle("Start");
-	
 	logger.Log("World size = " + std::to_string(world_size));
 	logger.Log("INT_MAX = " + std::to_string(INT_MAX));
+	logger.Log("LONG_MAX = " + std::to_string(LONG_MAX));
 
 	logger.LogTitle("Starting, all processes check in!");
 
@@ -65,20 +76,38 @@ TRTEST(Test1){
 
 	transporter.Checkpoint();
 
-
-	int* counts = (int *)malloc(sizeof(int) * world_size);
+	sizev expected_size = 0;
+	sizev* counts = (sizev*)malloc(sizeof(sizev) * world_size);
 	std::string data[world_size];
 
-	// Note: count cannot be >= (INT_MAX / world_size) -1 TODO: <- confirm that
-	int count = 500 ;//(INT_MAX / ( 2 * world_size)); //Number of elements to send to each node
+
+	//Number of characters to send to each process
+	sizev count = (INT_MAX / (world_size - 1 ) ); 
+	//sizev count =  1024 * 1024; // 1 GB
+	//If sending count elements, process should expect to recieve ( count * world_size ) elements
+
 
 
 	logger.LogTitle("All processes, prepare data!");
+	logger.Log("Reserving space");
+
 	for(int i = 0; i < world_size; i++){
-		counts[i] = count;
+		if( rank == i )
+			counts[i] = 0;
+		else
+			counts[i] = count;
+
+		expected_size += counts[i];
+		data[i].reserve(counts[i]);
+	}
+
+	logger.Log("Done reserving space");
+
+
+	for(int i = 0; i < world_size; i++){
 
 		logger.Log("Sending " + std::to_string(counts[i]) + " elements to process[" + std::to_string(i)+"]");
-		for( int j = 0; j < counts[i]; j++){
+		for( sizev j = 0; j < counts[i]; j++){
 			data[i].append(std::to_string(i));
 		}
 		logger.Log("Data for process[" + std::to_string(i) + "] prepared");
@@ -100,8 +129,7 @@ TRTEST(Test1){
 	logger.LogTitle("All processes, check windows!");
 
 	//Verify size is correct
-	int expected_size = count * world_size;
-	int actual_size = transporter.GetWindowSize();
+	sizev actual_size = transporter.GetWindowSize();
 	ASSERT_EQ(expected_size,actual_size) << "Window size was not what was expected";
 	logger.Log("Window size = " + std::to_string(actual_size));
 
@@ -137,7 +165,7 @@ TRTEST(Test1){
 	
 	transporter.Checkpoint();	
 	logger.LogTitle("All processes, check your data!");
-	for(int i = 0; i < transporter.GetWindowSize(); i++){
+	for(sizev i = 0; i < transporter.GetWindowSize(); i++){
 		EXPECT_EQ(transporter.window_base_addr_[i],rank + '0') 
 			<< "For process "
 			<< rank 

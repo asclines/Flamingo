@@ -1,8 +1,11 @@
 #ifndef TRANSPORTER_H
 #define TRANSPORTER_H
 
+#define MPI_SIZEV MPI_LONG
+
+#include "logutils.hpp"
+
 #include <mpi.h>
-#include <string>
 #include <vector>
 #include <string>
 
@@ -21,17 +24,18 @@ public:
 	typedef std::vector<std::string> vector_str;
 	typedef std::vector<std::string>::iterator iterator_str;
 	typedef char var; //Unit type for data being send
-	typedef int sizev; //Value used for window size
+	typedef long int sizev; //Value used for window size, NOTE! MPI_SIZEV must be defined the same
+//	typedef MPI_LONG MPI_SIZEV; //MPI equivalent of whatever the above line is
 
 	var *window_base_addr_;	
+	TransportLogger logger;
 //Constructors / Destructors 
 		
-	Transporter(bool debug = false);
+	Transporter();
 	~Transporter();
 
 //Methods - Utils
 
-	void Log(std::string message);
 
 	ProcessInfo GetProcessInfo();
 	
@@ -85,14 +89,14 @@ public:
 			int source
 		    );
 
-	bool OpenTransport(int* counts);
+	bool OpenTransport(sizev* counts);
 
-		void CloseTransport();
+	void CloseTransport();
 
-		bool Transport(
-				char* data,
-				int size,
-				int dest
+	bool Transport(
+			char* data,
+			sizev size,
+			int dest
 			 );
 	private:
 	//Methods - MPI Operations
@@ -114,8 +118,7 @@ public:
 			);
 	//Methods - Utils
 	//Data members
-	bool DEBUG;
-	int *displ; //array of size equal to world size where value is the displacement in the window at the node with value of index in this array
+	sizev *displ; //array of size equal to world size where value is the displacement in the window at the node with value of index in this array
 	ProcessInfo process_info_;
 	MPI_Win window_;
 	MPI_Group group_; //Group of all process

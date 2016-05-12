@@ -1,5 +1,6 @@
 #include "transporter.hpp"
 
+#include "logutils.hpp"
 #include <mpi.h>
 #include <stdio.h>
 #include <string>
@@ -9,9 +10,8 @@
  *	Public Method Definitions - Constructors/Destructors
  ****************************************************************************/
 
-Transporter::Transporter(bool debug){
+Transporter::Transporter(){
 	MPI_Init(NULL,NULL);
-	DEBUG = debug;
 	MPI_Comm_size(MPI_COMM_WORLD, &process_info_.world_size);  
 	MPI_Comm_rank(MPI_COMM_WORLD, &process_info_.world_rank);
 	char name[MPI_MAX_PROCESSOR_NAME];  
@@ -47,6 +47,16 @@ std::string Transporter::GetSummary(){
 }
 
 
+//void Transporter::SetDebug(bool debug_on, std::string log_filename){
+//	log_filename_ = log_filename;
+//	LOG_TO_FILE = true;
+//	SetDebug(debug_on);
+
+//}
+
+//void Transporter::SetDebug(bool debug_on){
+//	DEBUG = debug_on;
+//}
 
 Transporter::sizev Transporter::GetWindowSize(){
 	int flag;
@@ -136,29 +146,29 @@ void Transporter::Scatter(
 }
 
 
-bool Transporter::OpenTransport(int* counts){
-	int* recv_buffer = (int *)malloc(sizeof(int) * process_info_.world_size); //First used to hold recv_counts then to hold recv_displ
-	int* send_displ = (int *)malloc(sizeof(int) * process_info_.world_size); //Values are size in bytes
+bool Transporter::OpenTransport(sizev* counts){
+	sizev* recv_buffer = (sizev *)malloc(sizeof(sizev) * process_info_.world_size); //First used to hold recv_counts then to hold recv_displ
+	sizev* send_displ = (sizev *)malloc(sizeof(sizev) * process_info_.world_size); //Values are size in bytes
 	sizev total_recv_counts;
 	int mpi_error_value = 0;	
 	//Send number of elements wanting to send to each process
 	mpi_error_value = MPI_Alltoall(
 				counts,
 				1,
-				MPI_INT,
+				MPI_SIZEV,
 				recv_buffer,
 				1,
-				MPI_INT,
+				MPI_SIZEV,
 				MPI_COMM_WORLD
 			);
 
-	Log("OpenTransport: Sent counts with sucess " + std::to_string(mpi_error_value));
+	logger.Log("OpenTransport: Sent counts with sucess " + std::to_string(mpi_error_value));
 
 	//Iterate through recv_counts to determine total size of memory needed and displacement
 	send_displ[0] = 0;
 	total_recv_counts = 0;
 	for(int i = 0; i < process_info_.world_size-1; i++){
-		int isize = recv_buffer[i] * sizeof(var);
+		sizev isize = recv_buffer[i] * sizeof(var);
 		send_displ[i+1] = send_displ[i] + isize;
 		total_recv_counts+= recv_buffer[i];
 	}
@@ -168,14 +178,14 @@ bool Transporter::OpenTransport(int* counts){
 	mpi_error_value = MPI_Alltoall(
 				send_displ,
 				1,
-				MPI_INT,
+				MPI_SIZEV,
 				recv_buffer,
 				1,
-				MPI_INT,
+				MPI_SIZEV,
 				MPI_COMM_WORLD
 			    );
 
-	Log("OpenTransport: Sent displacement with success " + std::to_string(mpi_error_value));
+	logger.Log("OpenTransport: Sent displacement with success " + std::to_string(mpi_error_value));
 	//Create window
 	sizev window_size = total_recv_counts * sizeof(var); 
 
@@ -185,7 +195,7 @@ bool Transporter::OpenTransport(int* counts){
 				&window_base_addr_
 				);
 
-	Log("OpenTransport: Allocated window memory with sucess " + std::to_string(mpi_error_value));
+	logger.Log("OpenTransport: Allocated window memory with sucess " + std::to_string(mpi_error_value));
 
 	window_base_addr_[0] = 'X';
 	
@@ -199,7 +209,7 @@ bool Transporter::OpenTransport(int* counts){
 				&window_
 			      );
 	
-	Log("OpenTransport: Created window with success " + std::to_string(mpi_error_value));
+	logger.Log("OpenTransport: Created window with success " + std::to_string(mpi_error_value));
 
 	mpi_error_value = MPI_Comm_group(
 			MPI_COMM_WORLD,
@@ -207,7 +217,7 @@ bool Transporter::OpenTransport(int* counts){
 			);
 
 
-	Log("OpenTransport: Created window group with success " + std::to_string(mpi_error_value));
+	logger.Log("OpenTransport: Created window group with success " + std::to_string(mpi_error_value));
 	free(send_displ);
 	displ = recv_buffer;
 	
@@ -216,12 +226,12 @@ bool Transporter::OpenTransport(int* counts){
 
 void Transporter::CloseTransport(){
 	MPI_Win_free(&window_);
-	Log("CloseTransport: Closed");
+	logger.Log("CloseTransport: Closed");
 }
 
 bool Transporter::Transport(
 			var *data,
-			int size,
+			sizev size,
 			int dest){
 
 	int mpi_error_value = 0;
@@ -281,15 +291,4 @@ void Transporter::BroadcastInt(
 			source,
 			MPI_COMM_WORLD
 		);
-}
-/****************************************************************************
- *	Private Method Definitions - Utils
- ****************************************************************************/
-
-void Transporter::Log(
-		std::string message
-		){
-	if(DEBUG){
-		std::cout << "Process[" << process_info_.world_rank << "] : " << message << std::endl;
-	}
 }
