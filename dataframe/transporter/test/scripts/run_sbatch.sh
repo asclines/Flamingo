@@ -75,17 +75,29 @@ do
 	fi
 done
 
+
+SACCT=$(sacct -j $SJOB --format=JobID,JobName,MaxRSS,AllocCPUS,Elapsed,State,ExitCode  )
+
+echo "SACCT output"
+echo "$SACCT"
+echo "$SACCT" > sacct.out
+
 if [ $SAVE -ne 0 ] 
 then 
 	echo "Saving out files to logs/$SJOB"
 	mkdir -p "logs/$SJOB"
+	
+	# For slurm output
 	for file in *.out; do
 		mv $file "logs/$SJOB/"
 	done
 
+	# For logutils output
 	for file in out/*.out; do
 		mv $file "logs/$SJOB/"
 	done
+	
+
 
 #	if [ -f output_test.out ]
 #		then
