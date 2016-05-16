@@ -13,4 +13,4 @@
 # 
 
 
-/usr/lib64/openmpi/bin/mpirun  test_all
+/usr/lib64/openmpi/bin/mpirun  test_all #--gtest_filter="*Test2*"

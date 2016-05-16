@@ -24,6 +24,9 @@ SRC=../source_files
 F_TEST=./*.cpp
 T_TEST=$(SRC)/*
 
+TEST_MACRO=$(CC) $(FLAGS) $(LIBS) $(IN_T) -o test_all main_test.cpp  $(IN_MPI) $(DB) -D TRANSPORTER_TEST
+
+
 run: clean
 	mpirun -n $(NP) test_all
 
@@ -34,6 +37,13 @@ clean:
 	@(rm *.out out/*.out) &> /dev/null || true
 
 test: $(F_TEST) $(T_TEST)
-	$(CC) $(FLAGS) $(LIBS) $(IN_T) -o test_all main_test.cpp  $(IN_MPI) $(DB)
+	$(TEST_MACRO)	
+	
 
+#$(CC) $(FLAGS) $(LIBS) $(IN_T) -o test_all main_test.cpp  $(IN_MPI) $(DB) -D TRANSPORTER_TEST
+	
+#-D TRANSPORTER_MAX_TEST
+
+maxtest: $(F_TEST) $(T_TEST)
+	$(TEST_MACRO) -D TRANSPORTER_MAX_TEST
 
