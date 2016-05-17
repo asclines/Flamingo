@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 
-#if defined(TRANSPORTER_TEST)
+#include "collective_test.cpp"
 #include "transporter_test.cpp"
-#endif
 
 class TransportEnvironment : public testing::Environment{
 public: 

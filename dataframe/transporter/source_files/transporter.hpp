@@ -25,7 +25,6 @@ public:
 	typedef std::vector<std::string>::iterator iterator_str;
 	typedef char var; //Unit type for data being send
 	typedef long int sizev; //Value used for window size, NOTE! MPI_SIZEV must be defined the same
-//	typedef MPI_LONG MPI_SIZEV; //MPI equivalent of whatever the above line is
 
 	var *window_base_addr_;	
 	TransportLogger logger;
@@ -36,7 +35,7 @@ public:
 
 //Methods - Utils
 
-
+	void Destroy(); //Finalizes MPI, no method can work after this
 	ProcessInfo GetProcessInfo();
 	
 	std::string GetSummary(); //For debugging use
@@ -50,6 +49,7 @@ public:
 		
 	/*
 	 * Broadcast method where data_size is known by all processes
+	 * Test: SimpleBroadcast
 	 */
 	void Broadcast(
 			char* send_data, //Null if not source
@@ -82,6 +82,7 @@ public:
 		      );
 	/*
 	 * Scatter method where the receiving processes don't know the data_size 
+	 * @ Deprecated
 	 */
 	void Scatter(
 			vector_str* send_data,
@@ -122,6 +123,7 @@ public:
 	ProcessInfo process_info_;
 	MPI_Win window_;
 	MPI_Group group_; //Group of all process
+	int mpi_threads_provided_;
 		
 
 };

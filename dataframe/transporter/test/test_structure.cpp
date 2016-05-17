@@ -1,3 +1,6 @@
+#ifndef TRANSPORTER_TEST_STRUCTURE
+#define TRANSPORTER_TEST_STRUCTURE
+
 #include <gtest/gtest.h>
 #include "transporter.hpp"
 #include "logutils.hpp"
@@ -46,6 +49,7 @@ protected:
 
 		#if defined(TRANSPORTER_MAX_TEST)
 			is_max = true;
+			std::cout << "Max test!" << std::endl;
 		#endif
 
 
@@ -55,13 +59,17 @@ protected:
 				rank,
 				process_name
 				);
-
-		logger.SetLogToFile(test_name + "-" + std::to_string(rank));
+		std::string log_path("mkdir -p out/");
+		log_path.append(test_name);
+		system(log_path.c_str());
+		logger.SetLogToFile(test_name + "/node-" + std::to_string(rank));
 		transporter.logger.SetLogToFile(test_name 
-				+ "-" 
+				+ "/node-" 
 				+ std::to_string(rank)
 				+  "-transporter")
 			;
+		logger.ToggleLogFile(true);
+		transporter.logger.ToggleLogFile(false);
 	}
 
 
@@ -73,3 +81,5 @@ protected:
 };
 
 Transporter TransporterTest::transporter;
+
+#endif

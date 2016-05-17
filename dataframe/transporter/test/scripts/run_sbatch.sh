@@ -1,11 +1,7 @@
 #! /bin/bash
 
-# USAGE! 
-# This script is intended to be run from the test folder as follows:
-# $ pwd
-# ../transporter/test
-# $ ./scripts/run_sbatch.sh
-
+DIR=/home/clines.alexander/GitRepos/MyRepos.d/Flamingo/dataframe/transporter/test
+TIMESTAMP=$(date +%Y%m%d%H%M%S)
 
 echo "Starting"
 NN=6 # Number of nodes
@@ -51,13 +47,18 @@ fi
 echo "Cleaning files from previous runs"
 make clean
 
-echo "Making test"
-make test
+echo "Making temp folder"
+mkdir $TIMESTAMP
+cd $TIMESTAMP
+mkdir out
+
+#echo "Making test"
+#make test
 
 echo "Running test"
-SOUT=$(sbatch -N $NN ./scripts/transporter_test_sbatch.sh)
+SOUT=$(sbatch -N $NN $DIR/scripts/transporter_test_sbatch.sh)
 SJOB=${SOUT: -3} # Gets last 3 characters of SOUT command which should be the job number # TODO switch to getting all characters after last space for X digit numbers instead of 3, just in case..
-
+echo $NN
 echo "Running job $SJOB"
 
 JFLAG=0
@@ -84,19 +85,21 @@ echo "$SACCT" > sacct.out
 
 if [ $SAVE -ne 0 ] 
 then 
-	echo "Saving out files to logs/$SJOB"
-	mkdir -p "logs/$SJOB"
-	
+	echo "Saving out files to $DIR/logs/$SJOB"
+#	mkdir -p "$DIR/logs/$SJOB"
+	mv $DIR/$TIMESTAMP $DIR/logs/$SJOB	
 	# For slurm output
-	for file in *.out; do
-		mv $file "logs/$SJOB/"
-	done
+#	for file in *.out; do
+#		mv $file "$DIR/logs/$SJOB/"
+#	done
 
 	# For logutils output
-	for file in out/*.out; do
-		mv $file "logs/$SJOB/"
-	done
+#	for file in out/*.out; do
+#		mv $file "$DIR/logs/$SJOB/"
+#	done
 	
+#	cd $DIR
+#	rm -r $TIMESTAMP	
 
 
 #	if [ -f output_test.out ]
@@ -116,7 +119,7 @@ then
 fi
 
 
-
+cd $DIR
 echo "Done"
 
 

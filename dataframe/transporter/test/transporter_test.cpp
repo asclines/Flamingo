@@ -4,13 +4,14 @@
 #include "test_structure.cpp"
 
 #include <string>
+#include <vector>
 #include <cstring>
 #include <iostream>
 #include <fstream>
 #include <ctime>
 #include <climits>
 /**
- * TEST 1:
+ * TEST1:
  * Tests sending data of same length to all processes
  **/
 
@@ -18,7 +19,7 @@ TRTEST(TransportMultiDataHappyPath){
 	Init("TransportMultiDataHappyPath");
 	logger.ToggleDebug(true);
 	logger.ToggleSTDOUT(false);
-	transporter.logger.ToggleDebug(true);
+	transporter.logger.ToggleDebug(false);
 	transporter.logger.ToggleSTDOUT(false);
 
 	logger.LogTitle("Start");
@@ -36,7 +37,8 @@ TRTEST(TransportMultiDataHappyPath){
 
 	sizev expected_size = 0;
 	sizev* counts = (sizev*)malloc(sizeof(sizev) * world_size);
-	std::string data[world_size];
+	std::vector<std::string> data(world_size);
+//	std::string data[world_size];
 
 
 	//Number of characters to send to each process
@@ -137,13 +139,14 @@ TRTEST(TransportMultiDataHappyPath){
 
 	//Note: As of current, transporter class does NOT free this memory
 	free(transporter.window_base_addr_);
+	free(counts);
 	transporter.CloseTransport();
 
 	logger.Log("Done");
 }
 
 /**
- * TEST 2:
+ * TEST2:
  * Tests sending large data to one other node
  **/
 TRTEST(TransportSingleDataHappyPath){

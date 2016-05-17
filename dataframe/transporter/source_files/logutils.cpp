@@ -40,7 +40,7 @@ std::string TransportLogger::GetTimeStamp(){
 void TransportLogger::SetLogToFile(std::string log_file_name){
 	log_to_file_ = true;
 	log_file_name_ = "out/" + log_file_name + ".out";
-	log_file_stream_.open(log_file_name_,std::ios::out|std::ios::app);
+	//log_file_stream_.open(log_file_name_,std::ios::out|std::ios::app);
 
 }
 
@@ -105,8 +105,10 @@ void TransportLogger::Output(std::string log_message, bool stdout_once){
 			log_file_stream_.open(log_file_name_,std::ios::out|std::ios::app);
 
 
-		if(log_file_stream_.is_open())
+		if(log_file_stream_.is_open()){
 			log_file_stream_<< log_message;
+			log_file_stream_.close();
+		}
 
 	}
 

@@ -5,7 +5,9 @@
 echo "Running in background"
 
 
-nohup ./scripts/run_sbatch.sh -s &
+nohup /home/clines.alexander/GitRepos/MyRepos.d/Flamingo/dataframe/transporter/test/scripts/run_sbatch.sh -s & 
+
+#nohup ./scripts/run_sbatch.sh -s &
 
 echo "Started"
 

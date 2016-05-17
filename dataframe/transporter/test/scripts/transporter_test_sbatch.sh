@@ -11,6 +11,6 @@
 # sbatch -N 5 sbatch_transporter.sh # runs 5 processes
 #
 # 
+DIR=/home/clines.alexander/GitRepos/MyRepos.d/Flamingo/dataframe/transporter/test
 
-
-/usr/lib64/openmpi/bin/mpirun  test_all #--gtest_filter="*Test2*"
+/usr/lib64/openmpi/bin/mpirun  $DIR/test_all #--gtest_filter="*Simple*"
